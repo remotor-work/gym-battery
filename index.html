@@ -2762,12 +2762,13 @@ const Workout = {
       const b = document.createElement('div');
       b.className = 'complete-banner visible';
       b.innerHTML = `
-        <!-- ИЛЛЮСТРАЦИЯ: иконка завершения тренировки -->
-        <div class="illust-wrap illust-md" style="margin:0 auto 16px;width:120px;height:80px;border:none;background:transparent">
-          <img src="assets/img/ui/workout-complete.png"
-               alt="Тренировка завершена"
-               data-fallback="complete">
-        </div>
+        <!-- ИЛЛЮСТРАЦИЯ: иконка завершения тренировки (SVG с анимацией) -->
+        <object data="assets/img/ui/workout-complete.svg"
+                type="image/svg+xml"
+                width="88" height="143"
+                aria-label="Тренировка завершена"
+                style="display:block;margin:0 auto 20px;overflow:visible">
+        </object>
         <div class="complete-title">БАТАРЕЯ<br>ЗАРЯЖЕНА</div>
         <div class="complete-sub">// 100% · все упражнения выполнены</div>
         ${totalVolume > 0 ? `<div class="complete-stats">Общий объём: <strong>${totalVolume.toLocaleString('ru')} кг</strong></div>` : ''}
