@@ -1,0 +1,3547 @@
+<!--
+  ╔═══════════════════════════════════════════════════════════════════════════════╗
+  ║                                                                             ║
+  ║   GYM BATTERY v3.0 — Workout Tracker PWA (Development Build)                ║
+  ║                                                                             ║
+  ║   Описание приложения:                                                      ║
+  ║   ────────────────────                                                      ║
+  ║   Gym Battery — одностраничное PWA-приложение для отслеживания              ║
+  ║   силовых тренировок по программе PPL (Push / Pull / Legs).                 ║
+  ║                                                                             ║
+  ║   Основная метафора интерфейса — батарея: каждая тренировка                 ║
+  ║   "заряжает" батарею от 0% до 100%. Интерфейс полностью на русском          ║
+  ║   языке, тёмная тема, mobile-first дизайн (max-width 480px).               ║
+  ║                                                                             ║
+  ║   Функционал:                                                               ║
+  ║   • 5 тренировочных дней (ПН–ПТ), СР/СБ/ВС — отдых                        ║
+  ║   • Каждый день — 6 упражнений с 7 вариантами каждое                       ║
+  ║   • Ввод веса (кг) и повторений для каждого подхода                         ║
+  ║   • Авто-заполнение данных из последней тренировки                          ║
+  ║   • Таймер отдыха между подходами (SVG-кольцо)                             ║
+  ║   • Механизм «отложить» если тренажёр занят                                ║
+  ║   • Автосброс прогресса по неделям (каждый понедельник)                     ║
+  ║   • Статистика: объём за неделю, история тренировок                         ║
+  ║   • Экспорт/импорт данных в JSON                                           ║
+  ║   • Настройки: кол-во подходов (2–6), длительность отдыха (30–300с)         ║
+  ║   • Хранение данных в localStorage (ключ: 'gb_v3')                          ║
+  ║   • Тактильная обратная связь (vibration API)                               ║
+  ║                                                                             ║
+  ║   Технический стек:                                                         ║
+  ║   • Ванильный HTML + CSS + JS (zero dependencies)                           ║
+  ║   • Архитектура: три синглтона — App, UI, Workout                           ║
+  ║   • Делегирование событий через data-action атрибуты                        ║
+  ║   • CSS Custom Properties (переменные) для темизации                        ║
+  ║   • Шрифты: Orbitron (заголовки, цифры), Exo 2 (основной текст)            ║
+  ║                                                                             ║
+  ║   Навигация по экранам (SPA):                                               ║
+  ║   ┌──────────────┐    ┌─────────────┐    ┌──────────────────┐               ║
+  ║   │ screen-home  │───→│screen-workout│───→│ screen-exercise  │              ║
+  ║   │ (Главная)    │    │ (Тренировка)│    │ (Варианты)       │              ║
+  ║   └──────┬───────┘    └─────────────┘    └────────┬─────────┘              ║
+  ║          │                                         │                        ║
+  ║   ┌──────┴───────┐                        ┌────────┴─────────┐             ║
+  ║   │ screen-stats │                        │ screen-variation │             ║
+  ║   │(Статистика)  │                        │ (Подходы/сеты)   │             ║
+  ║   └──────────────┘                        └──────────────────┘             ║
+  ║          │                                                                  ║
+  ║   ┌──────┴────────┐                                                        ║
+  ║   │screen-settings│                                                        ║
+  ║   │ (Настройки)   │                                                        ║
+  ║   └───────────────┘                                                        ║
+  ║                                                                             ║
+  ║   Структура папок для ассетов (предполагаемая):                             ║
+  ║   assets/                                                                   ║
+  ║   └── img/                                                                  ║
+  ║       ├── logo/                                                             ║
+  ║       │   └── gym-battery-logo.png      — Логотип приложения                ║
+  ║       ├── muscles/                                                          ║
+  ║       │   ├── chest.png                 — Иллюстрация: грудные мышцы       ║
+  ║       │   ├── back.png                  — Иллюстрация: мышцы спины         ║
+  ║       │   ├── shoulders.png             — Иллюстрация: дельтовидные        ║
+  ║       │   ├── legs.png                  — Иллюстрация: ноги                ║
+  ║       │   ├── biceps.png                — Иллюстрация: бицепс              ║
+  ║       │   └── triceps.png               — Иллюстрация: трицепс             ║
+  ║       ├── exercises/                                                        ║
+  ║       │   └── {exercise-slug}.png        — Техника выполнения варианта       ║
+  ║       │       (Пример: chest-flat-barbell.png, legs-squat-back.png)        ║
+  ║       │       Формат дня: mon/tue/wed/thu/fri/sat/sun (только английский)   ║
+  ║       └── ui/                                                               ║
+  ║           ├── workout-complete.png       — Иконка завершения тренировки     ║
+  ║           ├── stats-icon.png            — Иконка для экрана статистики      ║
+  ║           └── empty-state.png           — Заглушка: «пока пусто»           ║
+  ║                                                                             ║
+  ║   Автор:    [Имя разработчика]                                              ║
+  ║   Версия:   3.0.0-dev                                                      ║
+  ║   Дата:     Февраль 2026                                                   ║
+  ║   Лицензия: [Указать лицензию]                                             ║
+  ║                                                                             ║
+  ╚═══════════════════════════════════════════════════════════════════════════════╝
+-->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<!-- ═══════════════════════════════════════════════════════════════
+     META-ТЕГИ
+     Базовые мета-теги для PWA-режима на мобильных устройствах.
+     • viewport — запрещает масштабирование (user-scalable=no)
+     • theme-color — цвет шапки браузера (совпадает с фоном)
+     • apple-mobile-web-app — поддержка «добавить на рабочий стол» на iOS
+     ═══════════════════════════════════════════════════════════════ -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#161618">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>GYM BATTERY</title>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   ШРИФТЫ
+   ───────
+   Подключение Google Fonts:
+   • Orbitron — моноширинный технический шрифт для заголовков,
+     процентов, номеров, лейблов. Создаёт «приборный» вид.
+   • Exo 2 — основной текст, описания, кнопки.
+     Хорошо читается на маленьких размерах.
+   ═══════════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES (ПЕРЕМЕННЫЕ)
+   ──────────────────────────────────
+   Все цвета, радиусы и шрифты вынесены в переменные.
+   Чтобы сменить тему — достаточно изменить значения здесь.
+
+   Цветовая палитра:
+   • bg / bg2 / bg3 / bg4 — градации фона (от тёмного к светлому)
+   • border / border2     — цвета границ
+   • text / text2         — основной и яркий текст
+   • text-dim / text-off  — приглушённый и неактивный текст
+   • led / led-dim        — оранжевый акцент (основной цвет бренда)
+   • led-glow / led-bg    — свечение и фон для акцентных элементов
+   • green / red          — состояния успеха / опасности
+   • r / r2 / r3          — радиусы скруглений (14px, 9px, 6px)
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* Фоновые оттенки (от самого тёмного) */
+  --bg:       #161618;  /* Основной фон страницы */
+  --bg2:      #1d1d20;  /* Карточки, панели */
+  --bg3:      #252528;  /* Ховеры, нажатия */
+  --bg4:      #2e2e33;  /* Активные состояния */
+
+  /* Границы */
+  --border:   #2c2c32;  /* Основные разделители */
+  --border2:  #3a3a42;  /* Границы кнопок и полей */
+
+  /* Текст */
+  --text:     #8e8e9e;  /* Основной текст */
+  --text2:    #b8b8cc;  /* Яркий текст (заголовки списков) */
+  --text-dim: #505060;  /* Приглушённый (лейблы) */
+  --text-off: #343440;  /* Неактивный (отключённые элементы) */
+
+  /* Акцентный оранжевый (LED / «батарейная» тема) */
+  --led:      #d97320;  /* Основной оранжевый */
+  --led-dim:  #7a3e0e;  /* Тёмный оранжевый (границы) */
+  --led-glow: rgba(217,115,32,0.2);  /* Свечение */
+  --led-bg:   rgba(217,115,32,0.08); /* Фоновая подсветка */
+
+  /* Доп. цвета */
+  --green:    #2ecc71;  /* Успех */
+  --green-dim:#1a7a42;
+  --green-bg: rgba(46,204,113,0.08);
+  --red:      #e74c3c;  /* Опасность / удаление */
+  --red-dim:  #8b2e25;
+  --white:    #d8d8e8;  /* Самый яркий текст */
+
+  /* Радиусы скруглений */
+  --r:        14px;     /* Крупные карточки */
+  --r2:       9px;      /* Кнопки, поля ввода */
+  --r3:       6px;      /* Мелкие теги, чипы */
+
+  /* Шрифтовые стеки */
+  --orb: 'Orbitron', sans-serif;  /* Технический / приборный */
+  --exo: 'Exo 2', sans-serif;    /* Основной читабельный */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ГЛОБАЛЬНЫЙ СБРОС
+   ─────────────────
+   • box-sizing: border-box — padding не увеличивает размер блока
+   • -webkit-tap-highlight-color: transparent — убирает синюю
+     подсветку при нажатии на мобильных (iOS/Android)
+   ═══════════════════════════════════════════════════════════════════ */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text2);
+  font-family: var(--exo);
+  overflow: hidden; /* Прокрутку контролируем внутри #app */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   #app — КОРНЕВОЙ КОНТЕЙНЕР
+   ──────────────────────────
+   Центрированный контейнер max-width 480px.
+   height: 100dvh — использует dynamic viewport height для
+   корректного отображения на мобильных с адресной строкой.
+   overflow: hidden — экраны переключаются внутри абсолютно
+   позиционированными слоями (см. .screen).
+   ═══════════════════════════════════════════════════════════════════ */
+#app {
+  width: 100%;
+  max-width: 480px;
+  height: 100vh; /* Fallback for Android Chrome < 108 */
+  height: 100dvh;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SCREENS — Экраны и анимации переходов
+   ─────────────────────────────────────
+   Все экраны (.screen) абсолютно позиционированы внутри #app.
+   По умолчанию невидимы (opacity: 0, pointer-events: none).
+
+   Состояния:
+   • .active — текущий видимый экран (opacity: 1, translateX(0))
+   • .exit   — уходящий экран (translateX(-22px), быстрее fade-out)
+
+   Переходы: slide + fade, 300ms вход, 200ms выход.
+   ══════════════════════════════════════════════════════════════════ */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(22px);  /* Входящий экран появляется справа */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  background: var(--bg);
+}
+.screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+.screen.exit   { opacity: 0; transform: translateX(-22px); transition: opacity 0.2s ease, transform 0.2s ease; }
+
+/* ══════════════════════════════════════════════════════════════════
+   APP HEADER — Шапка приложения (общая для всех экранов)
+   ─────────────────────────────────────────────────────
+   Flex-контейнер: слева логотип + заголовок, справа кнопки.
+   Используется на каждом экране с разным контентом.
+   ══════════════════════════════════════════════════════════════════ */
+.app-header {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;           /* Не сжимается при нехватке места */
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* ── Логотип (мелкий текст сверху) ── */
+.header-left .logo {
+  font-family: var(--orb);
+  font-size: 7.5px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* ── Заголовок экрана ── */
+.header-left .title {
+  font-family: var(--orb);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--white);
+  line-height: 1;
+}
+
+/* ── Правая часть хедера (кнопки) ── */
+.header-right { display: flex; gap: 7px; align-items: flex-end; }
+
+/* ── Кнопка «Назад» и иконочные кнопки ── */
+.back-btn, .icon-btn {
+  font-family: var(--exo);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: var(--r2);
+  padding: 7px 13px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.back-btn:active, .icon-btn:active { background: var(--bg3); color: var(--text2); }
+.icon-btn { padding: 7px 10px; font-size: 14px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   BATTERY BAR — Индикатор прогресса (батарея)
+   ────────────────────────────────────────────
+   Общий компонент, используется на экранах:
+   • screen-workout   — общий прогресс тренировки
+   • screen-exercise  — прогресс текущего упражнения
+   • screen-variation — прогресс при выполнении подходов
+
+   Структура:
+   ┌──────────────────────────────────────────────────┐
+   │ ЗАРЯД  ║████████████░░░░░░░░░░░░░░░░░░░║▌  45%  │
+   └──────────────────────────────────────────────────┘
+    label     battery-outer (рамка) + fill (полоска)  pct
+
+   .battery-outer::after — «контакт» батарейки справа (4×7px).
+   .battery-fill — полосатый градиент (repeating-linear-gradient),
+   имитирует LED-сегменты батареи.
+   .battery-fill.full — сплошной цвет + усиленное свечение при 100%.
+   ══════════════════════════════════════════════════════════════════ */
+.battery-wrap {
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.battery-label {
+  font-family: var(--orb);
+  font-size: 7px;
+  letter-spacing: 0.22em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+/* Внешняя рамка батарейки */
+.battery-outer {
+  position: relative;
+  flex: 1;
+  height: 15px;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  background: var(--bg2);
+  overflow: visible;
+}
+/* Контакт батарейки (правый выступ) */
+.battery-outer::after {
+  content: '';
+  position: absolute;
+  right: -6px; top: 50%;
+  transform: translateY(-50%);
+  width: 4px; height: 7px;
+  background: var(--border2);
+  border-radius: 0 3px 3px 0;
+}
+
+/* Заполнение батарейки (анимированная полоска) */
+.battery-fill {
+  height: 100%;
+  border-radius: 3px;
+  /* LED-полоски: 3px оранж, 4px полупрозрачный — повтор */
+  background: repeating-linear-gradient(
+    90deg,
+    var(--led) 0px, var(--led) 3px,
+    rgba(217,115,32,0.3) 3px, rgba(217,115,32,0.3) 7px
+  );
+  transition: width 0.65s cubic-bezier(0.4,0,0.2,1);  /* Плавная анимация */
+  box-shadow: 0 0 8px var(--led-glow);
+  min-width: 0;
+  width: 0%;  /* Управляется из JS через style.width */
+}
+/* 100% — сплошная заливка + усиленное свечение */
+.battery-fill.full { background: var(--led); box-shadow: 0 0 18px rgba(217,115,32,0.55); }
+
+/* Процент справа от батарейки */
+.battery-pct {
+  font-family: var(--orb);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--led);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SCROLL BODY — Прокручиваемая область контента
+   ─────────────────────────────────────────────
+   flex: 1 — занимает всё пространство между хедером и футером.
+   Тонкий скроллбар (2px) для эстетики тёмной темы.
+   ══════════════════════════════════════════════════════════════════ */
+.scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;  /* Плавный скролл на iOS */
+}
+.scroll-body::-webkit-scrollbar { width: 2px; }
+.scroll-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   HOME SCREEN — Главный экран
+   ────────────────────────────
+   Отображает сетку из 4 тренировочных дней (2 колонки × 2 строки).
+   Каждый день — карточка-батарейка (.day-card).
+   ══════════════════════════════════════════════════════════════════ */
+#screen-home .scroll-body { padding: 16px; }
+
+/* Лейбл раздела (мелкий серый текст) */
+.section-label {
+  font-family: var(--orb);
+  font-size: 7px;
+  letter-spacing: 0.25em;
+  color: var(--text-off);
+  text-transform: uppercase;
+  margin-bottom: 13px;
+}
+
+/* Сетка карточек дней: 2 колонки */
+.day-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+/* ── WEEK BAR — Строка прогресса недели ──
+   Показывает "X / Y тренировок" + кнопку сброса.
+   ───────────────────────────────────────── */
+.week-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 10px 13px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+}
+.week-info {
+  font-family: var(--orb);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.week-info strong { color: var(--led); font-weight: 600; }
+.week-actions { display: flex; gap: 6px; }
+.week-btn {
+  font-family: var(--exo);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: var(--r3);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.week-btn:active { background: var(--bg3); color: var(--text2); }
+.week-btn.danger { border-color: var(--red-dim); color: var(--red-dim); }
+.week-btn.danger:active { background: rgba(231,76,60,0.1); color: var(--red); }
+
+/* ══════════════════════════════════════════════════════════════════
+   DAY CARD — Карточка тренировочного дня
+   ──────────────────────────────────────
+   Визуализирует один день как мини-батарейку.
+
+   Состояния (CSS-классы):
+   • .available — доступна для запуска (оранжевая граница)
+   • .partial   — частично завершена (показывает % прогресса)
+   • .done      — 100% завершена (заливка, свечение)
+   • .inactive  — день отдыха (серая, некликабельная)
+
+   Структура карточки:
+   ┌─────────────────────┐  ← .day-card::before (контакт)
+   │ Д1                  │  ← .day-label
+   │ ДЕНЬ 1              │  ← .day-name
+   │                     │
+   │ ║████████░░░░░░░║   │  ← .day-mini-bat (мини-батарейка)
+   │ PUSH A · 6 упр.     │  ← .day-workout-label
+   │█████████████████████│  ← .day-fill (фоновая заливка при done)
+   └─────────────────────┘
+   ══════════════════════════════════════════════════════════════════ */
+.day-card {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 13px 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: visible;
+  transition: border-color 0.18s, background 0.18s, transform 0.1s;
+  min-height: 130px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: var(--bg2);
+}
+.day-card:active { transform: scale(0.97); }
+
+/* ── Состояния карточки ── */
+.day-card.available { border-color: var(--border2); }
+.day-card.available:active { border-color: var(--led-dim); background: var(--bg3); }
+.day-card.partial { border-color: var(--led-dim); }
+.day-card.partial::before { background: var(--led-dim); }
+.day-card.partial .day-label { color: var(--led); opacity: 0.85; }
+.day-card.partial .day-mini-bat-fill { width: var(--partial-pct, 0%); }
+.day-card.partial .day-workout-label { color: var(--led); opacity: 0.7; }
+.day-card.partial:active { background: var(--bg3); }
+.day-card.done { border-color: var(--led-dim); }
+.day-card.inactive { border-color: var(--border); opacity: 0.25; cursor: default; background: transparent; }
+
+/* Контакт батарейки (верхний выступ карточки) */
+.day-card::before {
+  content: '';
+  position: absolute;
+  top: -5px; left: 50%; transform: translateX(-50%);
+  width: 18px; height: 5px;
+  background: var(--border2);
+  border-radius: 3px 3px 0 0;
+  transition: background 0.2s;
+}
+.day-card.done::before { background: var(--led-dim); }
+.day-card.inactive::before { background: var(--border); }
+
+/* Фоновая заливка при завершении (растёт снизу вверх) */
+.day-fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  border-radius: 0 0 calc(var(--r) - 1px) calc(var(--r) - 1px);
+  background: transparent;
+  transition: height 0.5s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+  height: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.day-card.done .day-fill {
+  height: 100%;
+  border-radius: calc(var(--r) - 1px);
+  /* Полосатый оранжевый фон — имитация LED */
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(217,115,32,0.18) 0px, rgba(217,115,32,0.18) 3px,
+    rgba(217,115,32,0.07) 3px, rgba(217,115,32,0.07) 8px
+  );
+  box-shadow: inset 0 0 20px rgba(217,115,32,0.08);
+}
+/* Контент карточки поверх заливки */
+.day-card > *:not(.day-fill) { position: relative; z-index: 1; }
+
+/* Название дня (крупное: Д1, Д2, ...) */
+.day-card .day-label {
+  font-family: var(--orb); font-size: 22px; font-weight: 700;
+  letter-spacing: 0.02em; color: var(--white); line-height: 1;
+}
+.day-card.done .day-label { color: var(--led); text-shadow: 0 0 12px rgba(217,115,32,0.4); }
+.day-card.inactive .day-label { color: var(--text-dim); }
+
+/* Полное название дня (мелкое: ДЕНЬ 1) */
+.day-card .day-name {
+  font-family: var(--exo); font-size: 8px; font-weight: 400;
+  letter-spacing: 0.14em; color: var(--text-dim); text-transform: uppercase; margin-top: 3px;
+}
+
+/* Мини-батарейка внутри карточки */
+.day-mini-bat { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+.day-mini-bat-outer {
+  position: relative;
+  height: 10px;
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.day-card.done .day-mini-bat-outer { border-color: var(--led-dim); }
+.day-card.inactive .day-mini-bat-outer { border-color: var(--border); }
+.day-mini-bat-fill {
+  height: 100%;
+  width: 0%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--led) 0px, var(--led) 3px,
+    rgba(217,115,32,0.35) 3px, rgba(217,115,32,0.35) 6px
+  );
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 0 6px rgba(217,115,32,0.3);
+}
+.day-card.done .day-mini-bat-fill { width: 100%; }
+.day-card.inactive .day-mini-bat-fill { display: none; }
+
+/* Текст под мини-батарейкой: название программы + статус */
+.day-workout-label {
+  font-family: var(--exo); font-size: 9px; font-weight: 500;
+  letter-spacing: 0.04em; color: var(--text-dim); line-height: 1.35;
+}
+.day-card.available .day-workout-label { color: var(--led); opacity: 0.78; }
+.day-card.done .day-workout-label { color: var(--led); opacity: 0.6; }
+.day-count {
+  display: block; font-family: var(--orb); font-size: 7px;
+  color: var(--text-off); margin-top: 2px; letter-spacing: 0.12em;
+}
+.day-card.done .day-count { color: var(--led-dim); }
+
+/* ══════════════════════════════════════════════════════════════════
+   WORKOUT LIST — Список упражнений в тренировке
+   ──────────────────────────────────────────────
+   Экран screen-workout: показывает очередь упражнений.
+   Каждый элемент (.exercise-item) содержит:
+   • Номер + тип (badge) + мышечная группа
+   • Название движения
+   • Кнопки: «Начать» и «Отложить»
+   ══════════════════════════════════════════════════════════════════ */
+#screen-workout .scroll-body { padding: 0; }
+
+.exercise-item {
+  border-bottom: 1px solid var(--border);
+  padding: 13px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  animation: slideIn 0.22s ease;  /* Плавное появление при рендере */
+}
+
+/* Анимация появления элемента списка */
+@keyframes slideIn {
+  from { opacity:0; transform: translateY(5px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* Мета-строка: номер, тип, мышца */
+.exercise-meta { display: flex; align-items: center; gap: 8px; }
+.exercise-index { font-family: var(--orb); font-size: 8px; color: var(--text-dim); min-width: 22px; flex-shrink: 0; }
+
+/* Бэйдж типа упражнения (ЖИМ, ТЯГА, ПРИСЕД, ...) */
+.exercise-type-badge {
+  font-family: var(--exo); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--led); background: var(--led-bg);
+  border: 1px solid var(--led-dim); border-radius: 20px;
+  padding: 2px 9px; flex-shrink: 0;
+}
+.exercise-muscle { font-family: var(--exo); font-size: 9px; color: var(--text-dim); flex: 1; text-align: right; }
+
+/* Название движения (крупный белый текст) */
+.exercise-movement {
+  font-family: var(--exo); font-size: 14px; font-weight: 500;
+  color: var(--white); letter-spacing: 0.02em; padding-left: 30px; line-height: 1.35;
+}
+
+/* Тег «отложено ×N» рядом с названием */
+.skip-tag {
+  display: inline-block; font-family: var(--orb); font-size: 7px; letter-spacing: 0.08em;
+  color: var(--text-dim); border: 1px solid var(--border); border-radius: 4px;
+  padding: 1px 6px; margin-left: 7px; vertical-align: middle;
+}
+.exercise-actions { display: flex; gap: 8px; padding-left: 30px; margin-top: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   COMPLETE BANNER — Баннер завершения тренировки
+   ──────────────────────────────────────────────
+   Появляется когда все упражнения выполнены (queue пуст).
+   Содержит: заголовок, подзаголовок, объём, кнопку завершения.
+   ══════════════════════════════════════════════════════════════════ */
+.complete-banner {
+  margin: 18px 16px;
+  border: 1px solid var(--led-dim);
+  border-radius: var(--r);
+  padding: 26px 18px 22px;
+  text-align: center;
+  background: linear-gradient(140deg, var(--bg2) 0%, var(--bg3) 100%);
+  box-shadow: 0 0 32px var(--led-glow);
+  animation: fadeUp 0.5s ease;
+  display: none;  /* Управляется JS — .visible */
+}
+.complete-banner.visible { display: block; }
+
+/* Анимация подъёма снизу */
+@keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+
+.complete-title {
+  font-family: var(--orb); font-size: 21px; font-weight: 700;
+  color: var(--led); letter-spacing: 0.06em; line-height: 1.25;
+  margin-bottom: 7px; text-shadow: 0 0 22px rgba(217,115,32,0.55);
+}
+.complete-sub {
+  font-family: var(--exo); font-size: 10px; font-weight: 400;
+  color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 20px;
+}
+.complete-stats {
+  font-family: var(--exo); font-size: 11px; color: var(--text);
+  margin-bottom: 16px; line-height: 1.6;
+}
+.complete-stats strong { color: var(--led); font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════════════
+   BUTTONS — Система кнопок (общая)
+   ────────────────────────────────
+   Все кнопки строятся от базового .btn:
+   • .btn-primary    — оранжевая обводка (основное действие)
+   • .btn-ghost      — серая обводка (второстепенное)
+   • .btn-full       — на всю ширину
+   • .btn-big-primary — крупная оранжевая (CTA-действие)
+   • .btn-big-ghost  — крупная серая (отмена)
+   ══════════════════════════════════════════════════════════════════ */
+.btn {
+  font-family: var(--exo); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  padding: 10px 15px; border-radius: var(--r2);
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--text2); cursor: pointer; transition: all 0.13s; flex-shrink: 0;
+}
+.btn:active { background: var(--bg4); }
+.btn-primary { border-color: var(--led); color: var(--led); background: var(--led-bg); }
+.btn-primary:active { background: rgba(217,115,32,0.18); }
+.btn-ghost { border-color: var(--border2); color: var(--text-dim); }
+.btn-ghost:active { background: var(--bg3); color: var(--text2); }
+.btn-full { width: 100%; text-align: center; display: block; }
+.btn-big-primary {
+  font-family: var(--orb); font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  background: var(--led-bg); border-color: var(--led); color: var(--led);
+  box-shadow: 0 0 12px var(--led-glow); padding: 15px; border-radius: var(--r2);
+}
+.btn-big-primary:active { background: rgba(217,115,32,0.2); }
+.btn-big-ghost {
+  font-family: var(--exo); font-size: 11px; font-weight: 400; letter-spacing: 0.07em;
+  background: transparent; border-color: var(--border2); color: var(--text-dim);
+  padding: 13px; border-radius: var(--r2);
+}
+.btn-big-ghost:active { background: var(--bg3); color: var(--text2); }
+
+/* ══════════════════════════════════════════════════════════════════
+   DETAIL SCREENS — Экраны деталей (общие стили)
+   ──────────────────────────────────────────────
+   Используются на:
+   • screen-exercise  — выбор варианта упражнения
+   • screen-variation — выполнение подходов
+
+   Компоненты:
+   • .detail-scroll     — прокручиваемая область
+   • .detail-badge-row  — строка чипов (тип + номер)
+   • .detail-chip       — чип-бэйдж (оранжевый или серый)
+   • .detail-main-title — заголовок упражнения
+   • .detail-muscle-line — мышечная группа
+   ══════════════════════════════════════════════════════════════════ */
+.detail-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 18px 10px;
+}
+.detail-scroll::-webkit-scrollbar { width: 2px; }
+.detail-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.detail-badge-row {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;
+}
+
+/* Чипы-бэйджи */
+.detail-chip {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; border-radius: 20px; padding: 3px 12px;
+}
+.detail-chip-orange {
+  font-family: var(--exo);
+  color: var(--led); background: var(--led-bg); border: 1px solid var(--led-dim);
+}
+.detail-chip-gray {
+  font-family: var(--orb);
+  color: var(--text-dim); border: 1px solid var(--border); letter-spacing: 0.1em;
+}
+
+.detail-main-title {
+  font-family: var(--exo); font-size: 21px; font-weight: 600;
+  color: var(--white); letter-spacing: 0.02em; line-height: 1.22; margin-bottom: 6px;
+}
+.detail-muscle-line {
+  font-family: var(--exo); font-size: 11px; font-weight: 400;
+  color: var(--led); opacity: 0.72; letter-spacing: 0.16em;
+  text-transform: uppercase; margin-bottom: 20px;
+}
+.detail-divider { height: 1px; background: var(--border); margin-bottom: 18px; border-radius: 1px; }
+.detail-section-label {
+  font-family: var(--orb); font-size: 7px; letter-spacing: 0.28em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 11px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   VARIATION CARD — Карточка варианта упражнения
+   ──────────────────────────────────────────────
+   Список кликабельных карточек с вариантами.
+   Каждая содержит: номер, название, теги оборудования, стрелку.
+   ══════════════════════════════════════════════════════════════════ */
+.variation-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 11px 13px; margin-bottom: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  position: relative;
+}
+.variation-card:last-child { margin-bottom: 0; }
+.variation-card:active { transform: scale(0.98); background: var(--bg3); border-color: var(--led-dim); }
+
+/* Стрелка справа */
+.variation-card .var-arrow {
+  position: absolute; top: 50%; right: 12px; transform: translateY(-50%);
+  font-size: 11px; color: var(--text-dim);
+  transition: color 0.15s, transform 0.15s;
+}
+.variation-card:active .var-arrow { color: var(--led); transform: translateY(-50%) translateX(2px); }
+
+.variation-card-header {
+  display: flex; align-items: baseline; gap: 9px; margin-bottom: 6px;
+}
+.var-num { font-family: var(--orb); font-size: 8px; color: var(--led-dim); flex-shrink: 0; width: 16px; }
+.var-name { font-family: var(--exo); font-size: 13px; font-weight: 600; color: var(--text2); flex: 1; line-height: 1.3; padding-right: 16px; }
+.var-equipment-row { display: flex; gap: 5px; flex-wrap: wrap; padding-left: 25px; }
+.var-tag {
+  font-family: var(--exo); font-size: 9px; font-weight: 400; letter-spacing: 0.04em;
+  color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--r3);
+  padding: 2px 8px; line-height: 1.4;
+}
+
+/* ── VARIATION DETAIL — Экран выполнения подходов ── */
+.vd-desc {
+  font-family: var(--exo); font-size: 13px; font-weight: 400; line-height: 1.65;
+  color: var(--text); margin-bottom: 24px;
+}
+.vd-equip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+.vd-equip-tag {
+  font-family: var(--exo); font-size: 10px; font-weight: 400;
+  color: var(--text2); border: 1px solid var(--border2); border-radius: var(--r3);
+  padding: 4px 10px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SET BUTTONS — Кнопки подходов
+   ─────────────────────────────
+   Ряд из N кнопок (по setsCount из настроек, 2–6).
+   Каждая кнопка: иконка ⚡ + номер подхода.
+
+   Состояние .done:
+   • Оранжевый фон + граница + свечение
+   • Молния убирает grayscale + анимация boltPop
+   ══════════════════════════════════════════════════════════════════ */
+.sets-row {
+  display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.set-btn {
+  flex: 1; min-width: 80px; padding: 12px 6px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--r2); cursor: pointer;
+  transition: all 0.18s; position: relative; overflow: hidden;
+}
+.set-btn:active { transform: scale(0.95); }
+.set-btn.done {
+  background: var(--led-bg);
+  border-color: var(--led);
+  box-shadow: 0 0 14px var(--led-glow);
+}
+
+/* Молния (эмодзи) — по умолчанию серая */
+.set-bolt {
+  font-size: 22px; line-height: 1;
+  filter: grayscale(1) brightness(0.4);
+  transition: filter 0.2s, transform 0.2s;
+}
+/* При .done — молния цветная + «пружинящая» анимация */
+.set-btn.done .set-bolt {
+  filter: none;
+  transform: scale(1.12);
+  animation: boltPop 0.3s ease;
+}
+
+/* Анимация «выскакивания» молнии */
+@keyframes boltPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); }
+  100% { transform: scale(1.12); }
+}
+
+.set-num {
+  font-family: var(--orb); font-size: 8px; letter-spacing: 0.15em;
+  color: var(--text-dim); text-transform: uppercase;
+}
+.set-btn.done .set-num { color: var(--led); }
+
+/* Подсказка под кнопками */
+.sets-hint {
+  font-family: var(--exo); font-size: 10px; color: var(--text-dim);
+  text-align: center; letter-spacing: 0.05em; margin-top: 6px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SET INPUTS — Поля ввода веса и повторений
+   ──────────────────────────────────────────
+   Два числовых input'а: вес (кг, шаг 0.5) и повторения.
+   Стилизованы под тему — оранжевый текст на тёмном фоне.
+
+   ЗАМЕТКА: -moz-appearance: textfield и ::-webkit-*
+   убирают стандартные стрелки у number-input'ов.
+   ══════════════════════════════════════════════════════════════════ */
+.set-inputs {
+  display: flex; gap: 6px; margin-top: 10px; justify-content: center; flex-wrap: wrap;
+}
+.set-input-group {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.set-input-group label {
+  font-family: var(--orb); font-size: 6px; letter-spacing: 0.2em;
+  color: var(--text-dim); text-transform: uppercase;
+}
+.set-input {
+  width: 64px; padding: 7px 5px;
+  font-family: var(--orb); font-size: 13px; font-weight: 600;
+  color: var(--led); text-align: center;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--r3);
+  outline: none;
+  transition: border-color 0.15s;
+  -moz-appearance: textfield;  /* Firefox: убирает стрелки */
+}
+.set-input::-webkit-outer-spin-button,
+.set-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.set-input:focus { border-color: var(--led-dim); }
+.set-input::placeholder { color: var(--text-off); font-weight: 400; }
+
+/* ══════════════════════════════════════════════════════════════════
+   REST TIMER — Таймер отдыха между подходами
+   ──────────────────────────────────────────
+   Полноэкранный оверлей с круговым прогрессом (SVG).
+
+   Структура:
+   ┌───────────────────────────────────────────┐
+   │           ОТДЫХ МЕЖДУ ПОДХОДАМИ            │  ← label
+   │                                           │
+   │              ╭─────────╮                  │
+   │            ╭─│   87    │─╮               │  ← timer-text
+   │           │   ╰─────────╯   │              │
+   │            ╰──── ○ ○ ────╯                │  ← SVG ring
+   │                                           │
+   │           [ Пропустить → ]                │  ← skip btn
+   └───────────────────────────────────────────┘
+
+   SVG-кольцо: r=70, circumference = 2πr ≈ 439.82.
+   Прогресс управляется через stroke-dashoffset.
+   ══════════════════════════════════════════════════════════════════ */
+.rest-timer-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(22,22,24,0.92);  /* Полупрозрачный тёмный фон */
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  animation: fadeIn 0.3s ease;
+}
+.rest-timer-overlay.visible { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.rest-timer-label {
+  font-family: var(--orb); font-size: 8px; letter-spacing: 0.3em;
+  color: var(--text-dim); text-transform: uppercase;
+}
+.rest-timer-value {
+  font-family: var(--orb); font-size: 56px; font-weight: 900;
+  color: var(--led); letter-spacing: 0.05em;
+  text-shadow: 0 0 30px rgba(217,115,32,0.5);
+}
+.rest-timer-ring {
+  width: 160px; height: 160px;
+  position: relative;
+}
+.rest-timer-ring svg {
+  width: 100%; height: 100%;
+  transform: rotate(-90deg);  /* Начало кольца — сверху (12 часов) */
+}
+.rest-timer-ring circle {
+  fill: none;
+  stroke-width: 4;
+  cx: 80; cy: 80; r: 70;  /* Центр 80×80, радиус 70 */
+}
+.rest-timer-ring .ring-bg { stroke: var(--border2); }  /* Фоновое кольцо (серое) */
+.rest-timer-ring .ring-fg {
+  stroke: var(--led);  /* Прогресс-кольцо (оранжевое) */
+  stroke-linecap: round;
+  stroke-dasharray: 439.82;   /* = 2 * π * 70 */
+  stroke-dashoffset: 0;       /* Управляется из JS */
+  transition: stroke-dashoffset 1s linear;
+  filter: drop-shadow(0 0 6px rgba(217,115,32,0.4));
+}
+/* Текст таймера поверх SVG (позиция: центр кольца) */
+.rest-timer-ring .timer-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--orb);
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--led);
+  text-shadow: 0 0 20px rgba(217,115,32,0.4);
+}
+
+/* Кнопка «Пропустить» таймер */
+.rest-skip-btn {
+  font-family: var(--exo); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-dim); background: none;
+  border: 1px solid var(--border2); border-radius: var(--r2);
+  padding: 10px 24px; cursor: pointer;
+  transition: all 0.15s; margin-top: 6px;
+}
+.rest-skip-btn:active { background: var(--bg3); color: var(--text2); }
+
+/* ── STICKY ACTIONS — Прилипающий футер с кнопками ──
+   Фиксирован внизу экрана (не скроллится).
+   Используется на screen-exercise и screen-variation.
+   ─────────────────────────────────────────────────── */
+.sticky-actions {
+  flex-shrink: 0;
+  padding: 11px 16px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 7px;
+  background: var(--bg);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   STATS SCREEN — Экран статистики
+   ─────────────────────────────────
+   Карточки (.stat-card) с данными за неделю и историей.
+   ══════════════════════════════════════════════════════════════════ */
+.stats-section { padding: 16px; }
+
+/* Карточка статистики */
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.stat-card-title {
+  font-family: var(--orb); font-size: 7px; letter-spacing: 0.25em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px;
+}
+/* Строка статистики: лейбл + значение */
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-label { font-family: var(--exo); font-size: 12px; color: var(--text); }
+.stat-value {
+  font-family: var(--orb); font-size: 14px; font-weight: 700; color: var(--led);
+}
+.stat-value.dim { color: var(--text-dim); font-weight: 400; font-size: 12px; }
+
+/* Элемент истории тренировок */
+.history-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.history-item:last-child { border-bottom: none; }
+.history-date {
+  font-family: var(--orb); font-size: 8px; letter-spacing: 0.15em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px;
+}
+.history-summary {
+  font-family: var(--exo); font-size: 12px; color: var(--text2); line-height: 1.4;
+}
+.history-summary strong { color: var(--led); font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════════════
+   SETTINGS SCREEN — Экран настроек
+   ────────────────────────────────
+   Группы настроек (.settings-group) с рядами (.setting-row).
+   Каждый ряд: лейбл слева, контрол (±кнопки + значение) справа.
+   ══════════════════════════════════════════════════════════════════ */
+.settings-group { margin-bottom: 20px; }
+.settings-group-title {
+  font-family: var(--orb); font-size: 7px; letter-spacing: 0.25em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px;
+}
+.setting-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-family: var(--exo); font-size: 12px; color: var(--text2); }
+.setting-label small { display: block; font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.setting-control { display: flex; align-items: center; gap: 8px; }
+.setting-value {
+  font-family: var(--orb); font-size: 13px; font-weight: 600; color: var(--led);
+  min-width: 36px; text-align: center;
+}
+/* Кнопки ± в настройках */
+.setting-btn {
+  width: 32px; height: 32px;
+  font-size: 16px; line-height: 1;
+  color: var(--text-dim); background: var(--bg2);
+  border: 1px solid var(--border2); border-radius: var(--r3);
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.setting-btn:active { background: var(--bg3); color: var(--led); }
+
+/* ══════════════════════════════════════════════════════════════════
+   TOAST — Всплывающее уведомление
+   ────────────────────────────────
+   Фиксировано внизу по центру. Появляется/исчезает плавно.
+   Управляется из JS: UI.toast('текст') добавляет .visible.
+   ══════════════════════════════════════════════════════════════════ */
+.toast {
+  position: fixed;
+  bottom: 30px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: var(--bg3);
+  border: 1px solid var(--led-dim);
+  border-radius: var(--r2);
+  padding: 10px 20px;
+  font-family: var(--exo); font-size: 11px; color: var(--led);
+  letter-spacing: 0.05em;
+  z-index: 200;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ══════════════════════════════════════════════════════════════════
+   CONFIRM DIALOG — Модальное окно подтверждения
+   ──────────────────────────────────────────────
+   Полноэкранный оверлей + центрированная карточка.
+   Используется для деструктивных действий:
+   • Сброс недели
+   • Очистка всех данных
+   ══════════════════════════════════════════════════════════════════ */
+.dialog-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(22,22,24,0.88);
+  z-index: 150;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.dialog-overlay.visible { display: flex; }
+.dialog-box {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 24px 20px 18px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  animation: fadeUp 0.3s ease;
+}
+.dialog-title {
+  font-family: var(--orb); font-size: 12px; font-weight: 700;
+  color: var(--white); letter-spacing: 0.08em; margin-bottom: 10px;
+}
+.dialog-text {
+  font-family: var(--exo); font-size: 12px; color: var(--text);
+  line-height: 1.5; margin-bottom: 18px;
+}
+.dialog-actions { display: flex; gap: 8px; }
+.dialog-actions .btn { flex: 1; }
+
+/* ══════════════════════════════════════════════════════════════════
+   ILLUSTRATION PLACEHOLDER — Контейнер иллюстрации
+   ─────────────────────────────────────────────────
+   Стили для контейнеров иллюстраций (.illust-wrap).
+   Когда реальное изображение не загружено — показывается
+   SVG-заглушка (генерируется через JS: ImgLoader).
+
+   Используется в:
+   • Хедер приложения (логотип)
+   • Экран упражнения (иллюстрация мышечной группы)
+   • Экран вариации (техника выполнения)
+   • Баннер завершения (иконка «готово»)
+   • Экран статистики (декоративный значок)
+   ══════════════════════════════════════════════════════════════════ */
+.illust-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--r2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+/* Мелкая иконка (рядом с заголовком, 32×32) */
+.illust-wrap.illust-sm {
+  width: 32px; height: 32px;
+  border-radius: var(--r3);
+}
+/* Средняя иллюстрация (мышечная группа, 16:9) */
+.illust-wrap.illust-md {
+  width: 100%; height: 202px; /* 16:9 при ширине 360px — fallback для Chrome < 88 */
+  margin-bottom: 16px;
+}
+/* Крупная иллюстрация (детали вариации, 16:9) */
+.illust-wrap.illust-lg {
+  width: 100%; height: 202px; /* 16:9 при ширине 360px — fallback для Chrome < 88 */
+  margin-bottom: 20px;
+}
+@supports (aspect-ratio: 16/9) {
+  .illust-wrap.illust-md,
+  .illust-wrap.illust-lg {
+    height: auto;
+    aspect-ratio: 16/9;
+  }
+}
+/* Изображение внутри обёртки */
+.illust-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+.illust-wrap img.loaded { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════════
+   CATALOG — Экран каталога упражнений
+   ════════════════════════════════════════════════════════════════ */
+
+/* Группа мышц: заголовок-разделитель */
+.catalog-group { margin-bottom: 8px; }
+.catalog-group-title {
+  font-family: var(--orb); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.22em; color: var(--led); text-transform: uppercase;
+  padding: 18px 16px 10px;
+  border-bottom: 1px solid var(--border2);
+}
+
+/* Одно упражнение: картинка + текст */
+.catalog-item {
+  display: flex; gap: 12px; align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.catalog-item:active { background: var(--bg2); }
+
+/* Миниатюра 16:9 */
+.catalog-thumb {
+  width: 96px; height: 54px; /* 96 × 9/16 — fallback для Chrome < 88 */
+  border-radius: var(--r2); overflow: hidden;
+  flex-shrink: 0; background: var(--bg2);
+  border: 1px solid var(--border);
+}
+@supports (aspect-ratio: 16/9) {
+  .catalog-thumb { height: auto; aspect-ratio: 16/9; }
+}
+.catalog-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  opacity: 0.85; transition: opacity 0.3s;
+}
+.catalog-thumb img.loaded { opacity: 1; }
+
+/* Текстовая часть */
+.catalog-info { flex: 1; min-width: 0; }
+.catalog-name {
+  font-family: var(--exo); font-size: 12px; font-weight: 500;
+  color: var(--text2); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.catalog-tags {
+  font-family: var(--exo); font-size: 9px; letter-spacing: 0.04em;
+  color: var(--text-dim); margin-top: 4px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     HTML СТРУКТУРА
+     ──────────────
+     Все экраны живут внутри #app как абсолютно позиционированные
+     слои (.screen). Только один экран имеет класс .active в каждый
+     момент времени.
+
+     Порядок экранов:
+     1. screen-home       — Главный экран (сетка дней)
+     2. screen-workout    — Тренировка (список упражнений)
+     3. screen-exercise   — Детали упражнения (варианты)
+     4. screen-variation  — Вариант + подходы + ввод веса
+     5. screen-stats      — Статистика и история
+     6. screen-settings   — Настройки
+
+     Плюс глобальные элементы:
+     • #toast             — Всплывающее уведомление
+     • #dialog            — Модальный диалог подтверждения
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: HOME — Главная страница
+       ─────────────────────────────────
+       Содержит:
+       • Хедер с логотипом + кнопки (Статистика, Настройки)
+       • Week bar (прогресс недели + сброс)
+       • Day grid (сетка 7 дней, 2 колонки)
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen active" id="screen-home">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo">PWA · v3.0</div>
+        <div class="title">GYM BATTERY</div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="btn-stats" aria-label="Статистика"><svg width="14" height="13" viewBox="0 0 14 13" fill="currentColor" aria-hidden="true"><rect x="0" y="6" width="3" height="7"/><rect x="4" y="3" width="3" height="10"/><rect x="8" y="0" width="3" height="13"/><rect x="12" y="4" width="2" height="9"/></svg></button>
+        <button class="icon-btn" id="btn-catalog" aria-label="Каталог упражнений"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="6" height="6"/><rect x="8" y="0" width="6" height="6"/><rect x="0" y="8" width="6" height="6"/><rect x="8" y="8" width="6" height="6"/></svg></button>
+        <button class="icon-btn" id="btn-settings" aria-label="Настройки">⚙</button>
+      </div>
+    </div>
+    <div class="scroll-body">
+      <!-- Week bar: рендерится из JS (UI.renderHome) -->
+      <div id="week-bar" class="week-bar"></div>
+      <div class="section-label">// Выбери день тренировки</div>
+      <!-- Day grid: рендерится из JS (UI.renderHome) -->
+      <div class="day-grid" id="day-grid"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: WORKOUT — Тренировка (очередь упражнений)
+       ──────────────────────────────────────────────────
+       Содержит:
+       • Хедер: день + название программы, кнопка «Выйти»
+       • Battery bar: прогресс тренировки (0–100%)
+       • Scroll body: список упражнений (рендерится из JS)
+       • Complete banner: появляется когда queue пуст
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-workout">
+    <div class="app-header">
+      <div class="header-left">
+        <!-- id="w-day-label" — заполняется из JS: "ПН · PUSH A" -->
+        <div class="logo" id="w-day-label">ПН · PUSH A</div>
+        <div class="title">ТРЕНИРОВКА</div>
+      </div>
+      <button class="back-btn" id="btn-go-home" aria-label="Вернуться на главную">← Выйти</button>
+    </div>
+    <div class="battery-wrap">
+      <span class="battery-label">Заряд</span>
+      <div class="battery-outer"><div class="battery-fill" id="battery-fill"></div></div>
+      <span class="battery-pct" id="battery-pct">0%</span>
+    </div>
+    <div class="scroll-body" id="exercise-list">
+      <!-- Содержимое рендерится из JS: Workout.render() -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: EXERCISE — Детали упражнения + варианты
+       ──────────────────────────────────────────────────
+       Показывает:
+       • Тип + номер (badge'ы)
+       • Название движения
+       • Мышечная группа
+       • Иллюстрация мышечной группы ← PLACEHOLDER
+       • Список вариантов (variation-card)
+       • Кнопки: «Выполнено» / «Отложить»
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-exercise">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo" id="ex-header-label">УПРАЖНЕНИЕ</div>
+        <div class="title">ДЕТАЛИ</div>
+      </div>
+      <button class="back-btn" id="btn-cancel-exercise" aria-label="Отложить и вернуться">← Назад</button>
+    </div>
+    <div class="battery-wrap">
+      <span class="battery-label">Заряд</span>
+      <div class="battery-outer"><div class="battery-fill" id="battery-fill-ex"></div></div>
+      <span class="battery-pct" id="battery-pct-ex">0%</span>
+    </div>
+    <div class="detail-scroll" id="detail-scroll">
+      <div class="detail-badge-row">
+        <span class="detail-chip detail-chip-orange" id="det-type">ТИП</span>
+        <span class="detail-chip detail-chip-gray" id="det-index">#01</span>
+      </div>
+      <div class="detail-main-title" id="det-movement">Движение</div>
+      <div class="detail-muscle-line" id="det-muscle">Мышца</div>
+
+      <!-- ИЛЛЮСТРАЦИЯ: мышечная группа (средняя)
+           Путь к файлу формируется динамически из JS:
+           assets/img/muscles/{muscle-key}.png
+           Если файл не найден — ImgLoader подставит SVG-заглушку. -->
+      <div class="illust-wrap illust-md" id="illust-muscle">
+        <img src="data:," alt="Иллюстрация мышечной группы"
+             data-fallback="muscle">
+      </div>
+
+      <div class="detail-divider"></div>
+      <div class="detail-section-label">// Варианты выполнения</div>
+      <!-- Список вариантов рендерится из JS: Workout.openExercise() -->
+      <div id="det-variations"></div>
+      <div style="height:6px"></div>
+    </div>
+    <div class="sticky-actions">
+      <button class="btn btn-full btn-big-primary" id="btn-complete-exercise">Выполнено</button>
+      <button class="btn btn-full btn-big-ghost" id="btn-postpone-exercise">Отложить — тренажёр занят</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: VARIATION — Вариант выполнения + подходы
+       ──────────────────────────────────────────────────
+       Показывает:
+       • Тип + номер (badge'ы)
+       • Название варианта
+       • Мышечная группа
+       • Оборудование (теги)
+       • Иллюстрация техники ← PLACEHOLDER
+       • Описание техники
+       • Кнопки подходов (sets)
+       • Поля ввода: вес + повторения
+       • Overlay: таймер отдыха (SVG ring)
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-variation">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo" id="vd-header-label">ВАРИАНТ</div>
+        <div class="title">ПОДХОДЫ</div>
+      </div>
+      <button class="back-btn" id="btn-close-variation" aria-label="Вернуться к вариантам">← Назад</button>
+    </div>
+    <div class="battery-wrap">
+      <span class="battery-label">Заряд</span>
+      <div class="battery-outer"><div class="battery-fill" id="battery-fill-vd"></div></div>
+      <span class="battery-pct" id="battery-pct-vd">0%</span>
+    </div>
+    <div class="detail-scroll" id="vd-scroll">
+      <div class="detail-badge-row">
+        <span class="detail-chip detail-chip-orange" id="vd-type-chip">ТИП</span>
+        <span class="detail-chip detail-chip-gray" id="vd-id-chip">#01</span>
+      </div>
+      <div class="detail-main-title" id="vd-title">Название</div>
+      <div class="detail-muscle-line" id="vd-muscle">Мышца</div>
+      <div class="detail-divider"></div>
+      <div class="detail-section-label">// Оборудование</div>
+      <div class="vd-equip-row" id="vd-equip"></div>
+
+      <!-- ИЛЛЮСТРАЦИЯ: техника выполнения варианта (крупная)
+           Путь к файлу формируется динамически из JS:
+           assets/img/exercises/{exercise-slug}.png
+           Slug берётся из поля img варианта: v.img
+           Пример: assets/img/exercises/chest-flat-barbell.png
+           Если файл не найден — ImgLoader подставит SVG-заглушку. -->
+      <div class="illust-wrap illust-lg" id="illust-exercise">
+        <img src="data:," alt="Техника выполнения упражнения"
+             data-fallback="exercise">
+      </div>
+
+      <div class="detail-section-label">// Техника выполнения</div>
+      <div class="vd-desc" id="vd-desc">Описание</div>
+      <div class="detail-section-label">// Подходы — нажми после каждого</div>
+      <!-- Кнопки подходов рендерятся из JS: Workout.openVariation() -->
+      <div class="sets-row" id="sets-row"></div>
+      <div class="sets-hint" id="sets-hint">Выполни все подходы</div>
+      <!-- Поля ввода веса/повторений рендерятся из JS -->
+      <div class="set-inputs" id="set-inputs"></div>
+      <div style="height:10px"></div>
+    </div>
+    <div class="sticky-actions">
+      <button class="btn btn-full btn-big-ghost" id="btn-back-to-variants">← Вернуться к вариантам</button>
+    </div>
+
+    <!-- ── REST TIMER OVERLAY ──
+         Появляется поверх screen-variation после нажатия подхода.
+         Содержит SVG-кольцо с обратным отсчётом.
+         Управляется: Workout.startRestTimer() / stopRestTimer() -->
+    <div class="rest-timer-overlay" id="rest-timer">
+      <div class="rest-timer-label">Отдых между подходами</div>
+      <div class="rest-timer-ring">
+        <!-- SVG кольцо: viewBox 160×160, два circle: фон (ring-bg) и прогресс (ring-fg) -->
+        <svg viewBox="0 0 160 160">
+          <circle class="ring-bg" />
+          <circle class="ring-fg" id="timer-ring-fg" />
+        </svg>
+        <!-- Текст по центру кольца (секунды) -->
+        <div class="timer-text" id="timer-text">90</div>
+      </div>
+      <button class="rest-skip-btn" id="btn-skip-timer">Пропустить →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: STATS — Статистика и история
+       ──────────────────────────────────────
+       Содержит:
+       • Карточка «Текущая неделя» (тренировки/упражнения/подходы/объём)
+       • Карточка «История» (последние 20 тренировок)
+       • Карточка «Данные» (кнопки экспорт/импорт)
+       Контент рендерится из JS: UI.renderStats()
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-stats">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo">Аналитика</div>
+        <div class="title">СТАТИСТИКА</div>
+      </div>
+      <button class="back-btn" id="btn-stats-back" aria-label="Назад">← Назад</button>
+    </div>
+    <div class="scroll-body">
+      <div class="stats-section" id="stats-content">
+        <!-- Контент рендерится динамически из JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: SETTINGS — Настройки
+       ─────────────────────────────
+       Содержит:
+       • Группа «Тренировка»: подходы (2–6), таймер (30–300с)
+       • Группа «Опасная зона»: очистить все данные
+       Контент рендерится из JS: UI.renderSettings()
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-settings">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo">Конфигурация</div>
+        <div class="title">НАСТРОЙКИ</div>
+      </div>
+      <button class="back-btn" id="btn-settings-back" aria-label="Назад">← Назад</button>
+    </div>
+    <div class="scroll-body">
+      <div class="stats-section" id="settings-content">
+        <!-- Контент рендерится динамически из JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: CATALOG — Каталог упражнений
+       Полный список всех упражнений, сгруппированных по мышечной группе.
+       Каждая группа: заголовок + карточки с иллюстрацией и названием.
+       Контент рендерится из JS: UI.renderCatalog() -->
+  <div class="screen" id="screen-catalog">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo">Все упражнения</div>
+        <div class="title">КАТАЛОГ</div>
+      </div>
+      <button class="back-btn" id="btn-catalog-back" aria-label="Назад">← Назад</button>
+    </div>
+    <div class="scroll-body">
+      <div id="catalog-content">
+        <!-- Контент рендерится динамически из JS -->
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ ГЛОБАЛЬНЫЕ КОМПОНЕНТЫ (вне #app) ═══ -->
+
+<!-- Toast уведомление (управляется через UI.toast()) -->
+<div class="toast" id="toast"></div>
+
+<!-- Модальный диалог подтверждения (управляется через UI.confirm()) -->
+<div class="dialog-overlay" id="dialog">
+  <div class="dialog-box">
+    <div class="dialog-title" id="dialog-title">Подтвердить?</div>
+    <div class="dialog-text" id="dialog-text">Действие необратимо.</div>
+    <div class="dialog-actions">
+      <button class="btn btn-ghost" id="dialog-cancel">Отмена</button>
+      <button class="btn btn-primary" id="dialog-confirm">Да</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   ╔═══════════════════════════════════════════════════════════════════════╗
+   ║                     JAVASCRIPT — LOGIC LAYER                        ║
+   ║                                                                     ║
+   ║  Архитектура: три объекта-синглтона                                 ║
+   ║  ─────────────────────────────────                                  ║
+   ║  1. App     — состояние, localStorage, управление неделей           ║
+   ║  2. UI      — рендеринг экранов, тосты, диалоги, haptic             ║
+   ║  3. Workout — логика тренировки (старт, подходы, таймер, finish)    ║
+   ║                                                                     ║
+   ║  Плюс утилита:                                                      ║
+   ║  4. ImgLoader — загрузка иллюстраций с fallback на SVG-заглушку     ║
+   ║                                                                     ║
+   ║  Делегирование событий:                                             ║
+   ║  • Все кнопки внутри #app используют data-action атрибуты           ║
+   ║  • Один обработчик на #app перехватывает все клики                   ║
+   ║  • Кнопки с фиксированными id — через addEventListener              ║
+   ╚═══════════════════════════════════════════════════════════════════════╝
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ImgLoader — Загрузчик иллюстраций с SVG-заглушкой
+   ──────────────────────────────────────────────────
+   Назначение:
+   Управляет загрузкой иллюстраций в элементы <img>.
+   Если реальный файл недоступен (onerror) — подставляет
+   легковесную inline-SVG заглушку в виде data:URI.
+
+   Использование:
+   • Автоматически срабатывает при DOMContentLoaded
+     для всех <img data-fallback>
+   • Вручную: ImgLoader.setSrc(imgElement, 'assets/img/...png')
+
+   Папки ассетов (ожидаемая структура):
+   ───────────────────────────────────
+   assets/img/
+   ├── logo/gym-battery-logo.png        (логотип)
+   ├── muscles/{key}.png                (иллюстрации мышечных групп)
+   │   Ключи: chest, back, shoulders, legs, biceps, triceps
+   ├── exercises/{exercise-slug}.png    (техника выполнения)
+   │   Имя берётся из поля img варианта: v.img + ".png"
+   │   Пример: chest-flat-barbell.png, legs-squat-back.png
+   │   day — только английский: mon/tue/wed/thu/fri/sat/sun
+   └── ui/
+       ├── workout-complete.png         (баннер завершения)
+       ├── stats-icon.png               (иконка статистики)
+       └── empty-state.png              (пустое состояние)
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ImgLoader = {
+
+  /**
+   * Карта ключей мышечных групп.
+   * Используется для маппинга русского названия мышцы → имя файла.
+   * Пример: "Грудь (нижняя)" → "chest" → assets/img/muscles/chest.png
+   * @type {Object.<string, string>}
+   */
+  muscleKeyMap: {
+    'грудь':    'chest',
+    'спина':    'back',
+    'плечи':    'shoulders',
+    'ноги':     'legs',      /* Используется для: квадрицепс, бицепс бедра, икры */
+    'бицепс':   'biceps',
+    'трицепс':  'triceps',
+    'дельты':   'shoulders',
+    'трапеция': 'back',
+    'широчайшие':'back',
+    'ромбовидные':'back',
+    'квадрицепс':'legs',
+    'ягодичные':'legs',
+    'икры':     'legs'
+  },
+
+  /**
+   * Генерирует SVG-заглушку в виде data:URI строки.
+   * Заглушка — нейтральная гантель на тёмном фоне, адаптированная
+   * под цветовую палитру приложения.
+   *
+   * @param {number} w — ширина SVG (px)
+   * @param {number} h — высота SVG (px)
+   * @param {string} label — текст-подпись под иконкой
+   * @returns {string} — data:image/svg+xml;charset=utf-8,... URI
+   */
+  placeholder(w = 200, h = 120, label = 'Иллюстрация') {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <rect width="${w}" height="${h}" rx="6" fill="#1d1d20"/>
+      <g transform="translate(${w/2}, ${h/2 - 8})" fill="none" stroke="#3a3a42" stroke-width="2" stroke-linecap="round">
+        <!-- Гантель: горизонтальная штанга -->
+        <line x1="-28" y1="0" x2="28" y2="0"/>
+        <!-- Левый блин -->
+        <rect x="-36" y="-10" width="10" height="20" rx="2" fill="#2e2e33" stroke="#3a3a42"/>
+        <!-- Правый блин -->
+        <rect x="26" y="-10" width="10" height="20" rx="2" fill="#2e2e33" stroke="#3a3a42"/>
+        <!-- Левая внешняя скоба -->
+        <rect x="-42" y="-6" width="6" height="12" rx="1.5" fill="#252528" stroke="#3a3a42"/>
+        <!-- Правая внешняя скоба -->
+        <rect x="36" y="-6" width="6" height="12" rx="1.5" fill="#252528" stroke="#3a3a42"/>
+      </g>
+      <text x="${w/2}" y="${h/2 + 22}" text-anchor="middle"
+            font-family="'Exo 2',sans-serif" font-size="9" fill="#505060"
+            letter-spacing="0.12em">${label}</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  },
+
+  /**
+   * Определяет ключ мышечной группы по русскому названию.
+   *
+   * @param {string} muscleText — название мышцы (из упражнения)
+   * @returns {string} — ключ для имени файла (chest, back, ...)
+   *
+   * @example
+   * ImgLoader.getMuscleKey("Грудь (нижняя)") // → "chest"
+   * ImgLoader.getMuscleKey("Спина (широчайшие)") // → "back"
+   */
+  getMuscleKey(muscleText) {
+    const lower = muscleText.toLowerCase();
+    for (const [keyword, key] of Object.entries(this.muscleKeyMap)) {
+      if (lower.includes(keyword)) return key;
+    }
+    return 'default';
+  },
+
+  /**
+   * Устанавливает src для <img> с автоматическим fallback.
+   * При ошибке загрузки — подставляет SVG-заглушку.
+   *
+   * @param {HTMLImageElement} img — элемент <img>
+   * @param {string} src — путь к файлу изображения
+   * @param {string} [label] — текст для заглушки (по умолчанию из alt)
+   */
+  setSrc(img, src, label) {
+    img.classList.remove('loaded');
+    img.onerror = () => {
+      /* Файл не найден — подставляем заглушку */
+      const w = (img.parentElement && img.parentElement.offsetWidth) || 200;
+      const h = (img.parentElement && img.parentElement.offsetHeight) || 120;
+      img.src = this.placeholder(w, h, label || img.alt || 'Изображение');
+      img.classList.add('loaded');
+      img.onerror = null;  /* Предотвращаем рекурсию */
+    };
+    img.onload = () => {
+      img.classList.add('loaded');
+    };
+    img.src = src;
+  },
+
+  /**
+   * Инициализация: находит все <img data-fallback> на странице
+   * и навешивает onerror обработчик для подстановки заглушки.
+   * Вызывается один раз при загрузке страницы.
+   */
+  init() {
+    document.querySelectorAll('img[data-fallback]').forEach(img => {
+      img.onerror = () => {
+        const w = (img.parentElement && img.parentElement.offsetWidth) || 200;
+        const h = (img.parentElement && img.parentElement.offsetHeight) || 120;
+        const type = img.dataset.fallback || 'default';
+        const labels = {
+          logo: 'GYM BATTERY',
+          muscle: 'Мышечная группа',
+          exercise: 'Техника упражнения',
+          complete: 'Тренировка завершена',
+          stats: 'Статистика'
+        };
+        img.src = this.placeholder(w, h, labels[type] || 'Изображение');
+        img.classList.add('loaded');
+        img.onerror = null;
+      };
+      /* Принудительно пытаемся загрузить текущий src */
+      const currentSrc = img.src;
+      img.src = '';
+      img.src = currentSrc;
+    });
+  }
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   БАЗА ДАННЫХ ВАРИАНТОВ УПРАЖНЕНИЙ (exerciseVariations)
+   ─────────────────────────────────────────────────────
+   Ключи: "{ДЕНЬ}-{НОМЕР}" → массив объектов вариантов.
+   Пример: "Д1-1" → 7 вариантов жима на горизонтальной скамье.
+
+   Каждый вариант:
+   {
+     name: string  — Полное название (рус + англ)
+     tags: string[] — Необходимое оборудование
+     desc: string  — Описание техники выполнения
+   }
+
+   Тренировочные дни:
+   • Д1 (1–6) → PUSH A: грудь, плечи, трицепс
+   • Д2 (1–6) → PULL A: спина, бицепс, задние дельты
+   • Д3 (1–6) → LEGS: квадрицепс, ягодичные, бицепс бедра, икры
+   • Д4 (1–6) → PUSH B + PULL B: вариации жимов и тяг
+
+   ВСЕГО: 4 дня × 6 упражнений × 7 вариантов = 168 вариантов.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const exerciseVariations = {
+  "Д1-1":[
+    { img:"chest-flat-barbell",    name:"Штанга на горизонтальной скамье (Flat Bench Press)", tags:["Гриф + блины","Горизонтальная скамья","Силовые стойки / рама безопасности"], desc:"Ляг на скамью, возьми гриф хватом чуть шире плеч. Опускай штангу к нижней части груди, локти под углом ~75°. Жми вверх, не допуская полного разгибания локтей. Лопатки сведены и прижаты к скамье на протяжении всего подхода." },
+    { img:"chest-flat-dumbbell",   name:"Гантели на горизонтальной скамье", tags:["Пара гантелей","Горизонтальная скамья"], desc:"Ляг на скамью с гантелями над грудью, ладони смотрят вперёд. Опускай гантели по дуге, чуть разводя локти, пока не почувствуешь растяжение в грудных. Жми вверх, сводя руки в верхней точке. Больший диапазон движения по сравнению со штангой." },
+    { img:"chest-flat-smith",      name:"Тренажёр Смита — горизонтально", tags:["Тренажёр Смита","Горизонтальная скамья"], desc:"Установи скамью под грифом Смита так, чтобы гриф опускался на нижнюю часть груди. Зафиксируй стопоры на нужной высоте. Движение аналогично штанге, но траектория строго вертикальная — это снижает нагрузку на стабилизаторы." },
+    { img:"chest-flat-machine",    name:"Тренажёр грудной жим (Chest Press Machine)", tags:["Тренажёр chest-press","Регулируемое сиденье"], desc:"Отрегулируй высоту сиденья так, чтобы рукояти находились на уровне нижней части груди. Спина прижата к спинке. Жми вперёд, не блокируя локти в конечной точке. Идеально для новичков и при усталости, когда нужна стабилизированная нагрузка." },
+    { img:"chest-flat-cable",      name:"Кроссовер стоя (Standing Cable Chest Press)", tags:["Кабельный кроссовер","D-рукояти на уровне груди"], desc:"Встань в центре между блоками, шагни вперёд. Жми обеими руками перед собой. Постоянное натяжение кабеля по всей амплитуде." },
+    { img:"chest-flat-converge",   name:"Тренажёр со сходящимися рычагами (Converging Chest Press Machine)", tags:["Тренажёр Life Fitness / Cybex","Регулируемое сиденье"], desc:"Рукояти на уровне нижней части груди. Жми вперёд — руки сходятся в финале, имитируя естественное движение грудных. Безопасен без партнёра." },
+    { img:"chest-flat-neutral",    name:"Тренажёр с нейтральным хватом (Neutral Grip Chest Press Machine)", tags:["Selectorized chest press","Параллельные рукояти"], desc:"Нейтральный хват снижает нагрузку на плечевой сустав. Подходит при дискомфорте от обычного горизонтального жима." }
+  ],
+  "Д1-2":[
+    { img:"chest-incline-barbell",      name:"Штанга на наклонной скамье 30–45° (Incline Bench Press)", tags:["Гриф + блины","Наклонная скамья","Силовые стойки"], desc:"Установи скамью на угол 30–45° — чем выше угол, тем больше нагрузка на передние дельты. Возьми гриф хватом шире плеч. Опускай к верхней части груди/ключицам." },
+    { img:"chest-incline-dumbbell",     name:"Гантели на наклонной скамье (Incline Dumbbell Press)", tags:["Пара гантелей","Наклонная скамья"], desc:"Сядь на наклонную скамью с гантелями на бёдрах, откинься и одновременно поднимай гантели. Жим выполняй с небольшим сведением в верхней точке." },
+    { img:"chest-incline-smith",        name:"Тренажёр Смита — наклонно", tags:["Тренажёр Смита","Наклонная скамья"], desc:"Установи наклонную скамью строго под грифом. Угол 30–40°. Движение строго вертикальное." },
+    { img:"chest-incline-cable-low",    name:"Кроссовер нижними блоками (Low Cable Fly)", tags:["Блочная рама","Два нижних блока","D-рукояти"], desc:"Встань в центр блочной рамы, возьми нижние блоки в D-рукояти. Веди руки по дуге вверх и своди перед грудью на уровне верхней её части." },
+    { img:"chest-incline-machine",      name:"Тренажёр наклонный жим (Incline Chest Press Machine)", tags:["Selectorized incline press","Спинка ~30°"], desc:"Рукояти на уровне верхней части груди. Жми по заданной траектории. Идеален для проработки верхней части груди без партнёра." },
+    { img:"chest-incline-cable-high",   name:"Тяга нижних блоков вверх к груди (Low-to-High Cable Fly)", tags:["Нижние блоки кроссовера","D-рукояти"], desc:"Встань в центре, возьми нижние блоки. Веди руки по дуге снизу вверх, сводя перед верхней частью груди. Максимально изолирует ключичный пучок грудных." },
+    { img:"chest-incline-lever",        name:"Рычажный жим с наклоном (Hammer Strength Incline Press)", tags:["Рычажный тренажёр","Блины","Независимые рукояти"], desc:"Независимые рычаги позволяют каждой руке работать в своей амплитуде. Устраняет дисбаланс." }
+  ],
+  "Д1-3":[
+    { img:"shoulder-press-barbell",  name:"Штанга над головой стоя (Standing Overhead Press)", tags:["Гриф + блины","Силовая стойка"], desc:"Возьми штангу хватом чуть шире плеч, гриф на уровне ключиц. Жми строго вертикально вверх, слегка отводя голову назад при прохождении грифа мимо лица." },
+    { img:"shoulder-press-dumbbell", name:"Гантели над головой сидя (Dumbbell Shoulder Press)", tags:["Пара гантелей","Скамья со спинкой"], desc:"Сядь, спина упирается в спинку под углом 80–90°. Гантели на уровне ушей, локти под углом ~90°. Жми вверх." },
+    { img:"shoulder-press-machine",  name:"Тренажёр плечевой жим (Shoulder Press Machine)", tags:["Тренажёр для плеч","Регулируемое сиденье"], desc:"Отрегулируй сиденье: рукояти на уровне плеч. Жми строго по заданной траектории." },
+    { img:"shoulder-press-smith",    name:"Тренажёр Смита — жим вверх", tags:["Тренажёр Смита","Скамья без спинки"], desc:"Установи скамью без спинки прямо под грифом. Вертикальный жим с фиксированной траекторией." },
+    { img:"shoulder-press-arnold",   name:"Арнольд-пресс (Arnold Press)", tags:["Пара гантелей","Скамья со спинкой"], desc:"Старт: ладони к себе. В ходе жима разворачивай кисти наружу. Круговое движение вовлекает все три пучка дельты." },
+    { img:"shoulder-press-lever",    name:"Рычажный жим на плечи (Plate-Loaded Shoulder Press)", tags:["Рычажный тренажёр","Блины","Независимые рукояти"], desc:"Каждая рука работает независимо — устраняет дисбаланс. Безопасно без партнёра." },
+    { img:"shoulder-press-alt",      name:"Жим гантелями поочерёдно стоя (Alternating Standing DB Press)", tags:["Пара гантелей","Стоя"], desc:"Жми гантели над головой поочерёдно. Добавляет стабилизационную нагрузку на кор." }
+  ],
+  "Д1-4":[
+    { img:"chest-fly-dumbbell-flat",    name:"Разводка гантелями лёжа (Dumbbell Fly)", tags:["Пара гантелей","Горизонтальная скамья"], desc:"Ляг горизонтально, гантели над грудью, ладони друг к другу. Разводи руки широкой дугой вниз — локти чуть согнуты и зафиксированы." },
+    { img:"chest-fly-cable-high",       name:"Кроссовер верхними блоками (Cable Fly High)", tags:["Блочная рама","Два верхних блока","D-рукояти"], desc:"Возьми верхние блоки, встань в центре, сделай шаг вперёд. Веди руки по дуге вниз и вперёд, сводя перед собой на уровне пояса." },
+    { img:"chest-fly-pecdeck",          name:"Тренажёр «Бабочка» / Pec-Deck (Flye Machine)", tags:["Тренажёр pec-deck","Регулируемые упоры"], desc:"Сядь, спина плотно к подушке. Предплечья упираются в мягкие упоры. Своди руки перед грудью, задерживаясь на 1 секунду в точке максимального сжатия." },
+    { img:"chest-fly-dumbbell-incline", name:"Разводка на наклонной скамье (Incline Dumbbell Fly)", tags:["Пара гантелей","Наклонная скамья 30-45°"], desc:"Разводка на наклоне смещает нагрузку на верхние пучки грудных." },
+    { img:"chest-fly-cable-mid",        name:"Кроссовер на среднем уровне (Mid-Height Cable Fly)", tags:["Блоки на уровне плеч","D-рукояти"], desc:"Установи блоки на уровне плеч. Своди руки горизонтально перед грудью." },
+    { img:"chest-fly-pecdeck-neutral",  name:"Тренажёр бабочка с вертикальными рукоятями (Pec Deck Neutral Grip)", tags:["Тренажёр pec-deck с вертикальными рукоятями"], desc:"Нейтральный хват снижает нагрузку на бицепс и акцентирует средние грудные." },
+    { img:"chest-fly-lever",            name:"Рычажный тренажёр разводка (Plate-Loaded Fly Machine)", tags:["Рычажный тренажёр","Блины","Независимые рычаги"], desc:"Имитирует разводку гантелями, но с большим весом и фиксированной траекторией." }
+  ],
+  "Д1-5":[
+    { img:"delt-lateral-dumbbell-standing", name:"Гантели — подъём в стороны стоя (Lateral Raise)", tags:["Пара лёгких гантелей","Стоя"], desc:"Встань, гантели вдоль тела. Поднимай руки в стороны до уровня плеч — локти чуть согнуты. В верхней точке мизинец выше большого пальца." },
+    { img:"delt-lateral-dumbbell-seated",   name:"Гантели — подъём в стороны сидя", tags:["Пара гантелей","Скамья без спинки"], desc:"Сидячий вариант исключает читинг корпусом. Сядь на край скамьи, корпус чуть вперёд." },
+    { img:"delt-lateral-cable",             name:"Кабельные боковые подъёмы (Cable Lateral Raise)", tags:["Нижний блок","D-рукоять"], desc:"Встань боком к блоку, возьми D-рукоять дальней от блока рукой. Поднимай руку в сторону." },
+    { img:"delt-lateral-machine",           name:"Тренажёр для средних дельт (Lateral Raise Machine)", tags:["Специальный тренажёр","Боковые рычаги"], desc:"Сядь, зафиксируй корпус. Предплечья опираются на боковые рычаги. Подними рычаги до уровня плеч." },
+    { img:"delt-lateral-forepad",           name:"Тренажёр с упорами для предплечий (Forearm Pad Lateral Raise)", tags:["Тренажёр с полукруглыми упорами","Предплечья давят на подушки"], desc:"Именно тот тренажёр с полукруглыми упорами: садишься, кладёшь предплечья на подушки и поднимаешь руки в стороны." },
+    { img:"delt-lateral-cable-cross",       name:"Подъём через тело на блоке (Cross-Body Cable Lateral Raise)", tags:["Нижний блок","D-рукоять"], desc:"Встань боком к блоку, возьми нижнюю рукоять дальней рукой — трос идёт наискосок через тело." },
+    { img:"delt-lateral-cable-behind",      name:"Подъём за спиной на блоке (Behind-Back Cable Lateral Raise)", tags:["Нижний блок","D-рукоять"], desc:"Встань лицом к стойке, возьми ближний нижний блок противоположной рукой за спиной." }
+  ],
+  "Д1-6":[
+    { img:"tri-pushdown-bar",               name:"Разгибание на верхнем блоке — прямая рукоять (Tricep Pushdown)", tags:["Верхний блок","Прямая/EZ-рукоять"], desc:"Встань лицом к верхнему блоку, возьми рукоять хватом сверху. Прижми локти к корпусу и не двигай ими — всё движение только в предплечьях." },
+    { img:"tri-pushdown-rope",              name:"Разгибание на блоке — канат (Rope Pushdown)", tags:["Верхний блок","Канат-рукоять"], desc:"Возьми канат нейтральным хватом. В нижней точке разводи концы каната в стороны — это увеличивает пиковое сокращение трицепса." },
+    { img:"tri-extension-barbell-lying",    name:"Французский жим со штангой лёжа (Lying Tricep Extension)", tags:["EZ-гриф","Горизонтальная скамья"], desc:"Ляг, возьми EZ-гриф узким хватом. Сгибай только в локтях, опуская гриф ко лбу." },
+    { img:"tri-extension-dumbbell-lying",   name:"Французский жим с гантелями лёжа", tags:["Пара гантелей","Горизонтальная скамья"], desc:"Аналог штанги, но с гантелями. Каждая рука работает независимо." },
+    { img:"tri-extension-cable-overhead",   name:"Разгибание над головой на блоке (Overhead Cable Extension)", tags:["Нижний блок","Канат-рукоять","Спиной к стойке"], desc:"Встань спиной к нижнему блоку, возьми канат за головой. Разгибай руки вверх." },
+    { img:"tri-extension-machine-overhead", name:"Тренажёр трицепс над головой (Overhead Tricep Extension Machine)", tags:["Специализированный тренажёр","Сиденье с упором"], desc:"Сядь, возьмись за рукоять над головой. Разгибай руки вверх, локти у ушей." },
+    { img:"tri-extension-dumbbell-overhead",name:"Разгибание одной рукой с гантелью (Single-Arm Overhead DB Extension)", tags:["Одна гантель","Стоя или сидя"], desc:"Возьми гантель в одну руку над головой. Опускай за голову и разгибай." }
+  ],
+  "Д2-1":[
+    { img:"back-pulldown-wide",         name:"Тяга верхнего блока к груди (Lat Pulldown)", tags:["Верхний блок","Широкая рукоять","Сиденье с фиксатором"], desc:"Зафиксируй бёдра. Тяни к верхней части груди, ведя локти вниз и назад. Грудь слегка поднята навстречу рукояти." },
+    { img:"back-pullup-weighted",       name:"Подтягивания с отягощением (Weighted Pull-Up)", tags:["Турник","Пояс с блином/жилет"], desc:"Прицепи отягощение к поясу. Хват шире плеч. Подтягивайся, пока подбородок не окажется выше грифа." },
+    { img:"back-pulldown-machine",      name:"Тренажёр lat-pulldown (Lat Pulldown Machine)", tags:["Тренажёр для широчайших","V-рукоять"], desc:"Тренажёрный аналог тяги блока. Смена рукоятей меняет акцент нагрузки." },
+    { img:"back-pulldown-reverse",      name:"Тяга обратным хватом (Reverse Grip Lat Pulldown)", tags:["Верхний блок","Прямая рукоять","Хват снизу"], desc:"Хват снизу активирует бицепс сильнее и позволяет тянуть с большим весом." },
+    { img:"back-pulldown-close-neutral",name:"Тяга узким нейтральным хватом (Close-Grip Neutral Pulldown)", tags:["Верхний блок","V-рукоять"], desc:"Нейтральный узкий хват позволяет тянуть локти максимально близко к телу." },
+    { img:"back-pullup-assisted",       name:"Тренажёр assisted pull-up", tags:["Тренажёр assisted pull-up","Контрвес"], desc:"Контрвес компенсирует часть веса тела. Отличный способ освоить подтягивание." },
+    { img:"back-pulldown-single",       name:"Тяга одной рукой на блоке (Single-Arm Lat Pulldown)", tags:["Верхний блок","D-рукоять"], desc:"Тяни одной рукой — можно полностью растянуть широчайшую, слегка наклоняясь в сторону." }
+  ],
+  "Д2-2":[
+    { img:"back-row-cable-seated",      name:"Горизонтальная тяга блока сидя (Seated Cable Row)", tags:["Нижний горизонтальный блок","V-рукоять"], desc:"Сядь, ноги слегка согнуты. Тяни V-рукоять к животу, разводя локти назад. В конечной точке своди лопатки." },
+    { img:"back-row-barbell-overhand",  name:"Тяга штанги в наклоне (Barbell Bent-Over Row)", tags:["Гриф + блины","Наклон ~45°","Хват снизу"], desc:"Наклон 45°, спина прямая. Хват снизу активнее задействует бицепс и средний пучок спины." },
+    { img:"back-row-dumbbell-both",     name:"Тяга гантелей в наклоне двумя руками", tags:["Пара гантелей","Наклон ~45°"], desc:"Встань, наклонись с прямой спиной. Тяни обе гантели одновременно к бёдрам, акцентируя движение лопатками." },
+    { img:"back-row-chest-support",     name:"Тренажёр гребля с упором в грудь (Chest-Supported Row)", tags:["Тренажёр chest-supported row","Грудной упор"], desc:"Ляг грудью на наклонный упор тренажёра. Это полностью исключает читинг корпусом." },
+    { img:"back-row-lever-hammer",      name:"Рычажный тренажёр тяга (Hammer Strength Seated Row)", tags:["Рычажный тренажёр","Блины","Независимые рычаги"], desc:"Ляг грудью на упор. Независимые рычаги позволяют каждой руке работать в своей амплитуде." },
+    { img:"back-row-machine-vertical",  name:"Тяга сидя вертикально (Selectorized Seated Row)", tags:["Тренажёр seated row","Вертикальная спинка"], desc:"Сядь вертикально. Тяни рукояти к животу. Вертикальное положение сильнее изолирует спину." },
+    { img:"back-row-cable-standing",    name:"Тяга в кроссовере стоя (Standing Single-Arm Cable Row)", tags:["Нижний/средний блок","D-рукоять"], desc:"Тяни к боку с небольшой ротацией корпуса — это увеличивает амплитуду." }
+  ],
+  "Д2-3":[
+    { img:"back-row-barbell-underhand", name:"Тяга штанги обратным хватом в наклоне", tags:["Гриф + блины","Наклон ~30°","Обратный хват"], desc:"Наклон корпуса более горизонтальный (~30°), хват снизу. Тяни к нижней части живота. Смещает нагрузку на нижние и средние пучки широчайших." },
+    { img:"back-row-tbar",              name:"T-Bar Row (тяга в упоре)", tags:["T-bar стойка","Рукоять-нейтраль"], desc:"Встань над T-bar, наклонись. Тяни к груди, разводя локти в стороны. Один из лучших вариантов для толщины спины." },
+    { img:"back-row-dumbbell-single",   name:"Тяга гантели одной рукой в наклоне", tags:["Одна гантель","Опора рукой о скамью"], desc:"Колено и рука одной стороны на скамье. Тяни гантель к бедру, ведя локоть высоко вдоль корпуса." },
+    { img:"back-row-cable-bent",        name:"Тяга нижнего блока в наклоне (Cable Bent-Over Row)", tags:["Нижний блок","Прямая рукоять/канат"], desc:"Возьми нижний блок, наклонись с прямой спиной. Тяни к нижней части живота." },
+    { img:"back-row-tbar-machine",      name:"Рычажный Т-бар тренажёр (T-Bar Row Machine)", tags:["Тренажёр T-bar с грудным упором","Блины"], desc:"Ляг грудью на упор тренажёра. Тяни к животу нейтральным хватом." },
+    { img:"back-pullover-dumbbell",     name:"Пуловер с гантелью лёжа (Dumbbell Pullover)", tags:["Тяжёлая гантель","Горизонтальная скамья"], desc:"Держи гантель двумя руками над грудью. Опусти за голову по дуге, растягивая широчайшие." },
+    { img:"back-row-cable-bilateral",   name:"Тяга двух блоков стоя (Bilateral Cable Row Standing)", tags:["Два нижних блока","D-рукояти"], desc:"Возьми оба нижних блока. Наклонись, тяни обе рукояти одновременно к поясу." }
+  ],
+  "Д2-4":[
+    { img:"bi-curl-barbell",        name:"Сгибание со штангой стоя (Barbell Curl)", tags:["EZ-гриф/прямой гриф","Стоя, хват снизу"], desc:"Возьми гриф хватом снизу шириной плеч. Локти прижаты к корпусу. Сгибай только предплечья." },
+    { img:"bi-curl-dumbbell-alt",   name:"Поочерёдные сгибания с гантелями (Alternating Dumbbell Curl)", tags:["Пара гантелей","Стоя/сидя"], desc:"Попеременно сгибай каждую руку. При подъёме разворачивай запястье (супинируй)." },
+    { img:"bi-curl-preacher",       name:"Скамья Скотта (Preacher Curl)", tags:["EZ-гриф/гантели","Скамья Скотта"], desc:"Упри плечи в подушку скамьи Скотта. Это блокирует читинг локтями." },
+    { img:"bi-curl-cable",          name:"Сгибание на нижнем блоке (Cable Curl)", tags:["Нижний блок","Прямая рукоять"], desc:"Постоянное натяжение троса обеспечивает нагрузку на бицепс даже в нижней точке." },
+    { img:"bi-curl-machine",        name:"Тренажёр для бицепса (Bicep Curl Machine)", tags:["Тренажёр со стеком","Плечи на упоре"], desc:"Сядь, плечи на упоре. Тренажёр исключает читинг — идеален для работы до отказа." },
+    { img:"bi-curl-concentration",  name:"Концентрированное сгибание (Concentration Curl)", tags:["Одна гантель","Сидя, локоть в бедро"], desc:"Локоть рабочей руки упирается во внутреннюю часть бедра. Максимальная изоляция." },
+    { img:"bi-curl-incline",        name:"Сгибание на наклонной скамье (Incline Dumbbell Curl)", tags:["Пара гантелей","Скамья 45-60°"], desc:"Руки свисают вниз — максимальное растяжение бицепса уже в старте." }
+  ],
+  "Д2-5":[
+    { img:"delt-rear-fly-bent",          name:"Разводка гантелями в наклоне (Bent-Over Rear Delt Fly)", tags:["Пара лёгких гантелей","Наклон ~70–90°"], desc:"Наклонись почти горизонтально. Разводи руки в стороны, ведя локти к потолку." },
+    { img:"delt-rear-machine-reverse",   name:"Тренажёр pec-deck в обратную позицию (Reverse Fly Machine)", tags:["Тренажёр pec-deck","Лицом к подушке"], desc:"Сядь лицом к подушке. Разводи руки назад, сводя лопатки." },
+    { img:"delt-rear-cable-cross",       name:"Кроссовер — тяга двух тросов назад (Rear Cable Fly)", tags:["Блочная рама","Два верхних блока","D-рукояти"], desc:"Встань в центре, возьми правый трос левой рукой и левый — правой (крест-накрест)." },
+    { img:"delt-rear-machine-dedicated", name:"Тренажёр для задних дельт (Rear Delt Machine)", tags:["Тренажёр для задних дельт","Горизонтальные рукояти"], desc:"Сядь лицом к подушке. Возьми горизонтальные рукояти. Разводи руки назад." },
+    { img:"delt-rear-cable-low",         name:"Тяга нижнего блока к уху (Single-Arm Low Cable Rear Fly)", tags:["Нижний блок","D-рукоять"], desc:"Возьми нижнюю рукоять дальней рукой. Веди руку вверх и в сторону к уху." },
+    { img:"delt-rear-machine-row",       name:"Face Pull в тренажёре (Machine Rear Delt Row)", tags:["Тренажёр rear delt row","Рукояти на уровне лица"], desc:"Рукояти на уровне лица. Тяни к лицу, разводя локти в стороны." },
+    { img:"delt-rear-cable-fly",         name:"Обратная бабочка в кроссовере (Cable Reverse Fly)", tags:["Два средних блока крест-накрест","D-рукояти","Руки прямые"], desc:"Прямые руки разводи в стороны горизонтально. Чистая нагрузка на задние дельты." }
+  ],
+  "Д2-6":[
+    { img:"trap-face-pull-cable",       name:"Тяга к лицу на блоке с канатом (Face Pull)", tags:["Средний/верхний блок","Канат-рукоять"], desc:"Тяни к лицу, разводя концы каната в стороны на уровне ушей. Одно из лучших упражнений для здоровья плечевого сустава." },
+    { img:"trap-face-pull-band",        name:"Тяга к лицу с лентой (Band Face Pull)", tags:["Эластичная лента","Точка фиксации на уровне лица"], desc:"Зафикси ленту на уровне лица. Техника идентична кабельному варианту. Подходит для разминки." },
+    { img:"trap-upright-row",           name:"Тяга штанги к подбородку (Upright Row)", tags:["EZ-гриф/прямой гриф","Стоя, узкий хват"], desc:"Возьми гриф узким хватом. Тяни вертикально вверх вдоль тела до уровня подбородка." },
+    { img:"trap-face-pull-seated",      name:"Face Pull сидя (Seated Face Pull)", tags:["Нижний/средний блок","Канат-рукоять","Сидя на полу"], desc:"Сядь на пол. Тяни канат к лицу, разводя концы в стороны у ушей. Полное исключение раскачки." },
+    { img:"back-pulldown-straight-arm", name:"Тяга прямыми руками вниз (Straight-Arm Lat Pulldown)", tags:["Верхний блок","Прямая рукоять"], desc:"Прямые руки тяни вниз и назад по дуге до бёдер. Изолирует широчайшие без участия бицепса." },
+    { img:"trap-upright-row-cable",     name:"Тяга к подбородку в кроссовере (Cable Upright Row)", tags:["Нижний блок","Прямая рукоять"], desc:"Тяни вертикально к подбородку. Кабель обеспечивает постоянное натяжение." },
+    { img:"trap-high-pull-rope",        name:"Тяга каната к шее (Rope High Pull)", tags:["Средний блок","Канат-рукоять"], desc:"Тяни канат к задней части шеи, максимально разводя локти. Мощно нагружает верхнюю трапецию." }
+  ],
+  "Д3-1":[
+    { img:"legs-squat-back",          name:"Приседание со штангой на спине (Back Squat)", tags:["Гриф + блины","Силовая стойка","Страховочные упоры"], desc:"Гриф на трапециях. Ноги на ширине плеч, носки развёрнуты. Приседай до параллели или ниже." },
+    { img:"legs-squat-front",         name:"Приседание со штангой на груди (Front Squat)", tags:["Гриф + блины","Силовая стойка","Хват крест/чистый"], desc:"Гриф на передних дельтах, локти высоко. Более вертикальное положение корпуса. Акцент на квадрицепс." },
+    { img:"legs-squat-smith",         name:"Тренажёр Смита — приседание", tags:["Тренажёр Смита","Встроенные стопоры"], desc:"Поставь ноги чуть впереди. Используй страховочные стопоры. Подходит для новичков." },
+    { img:"legs-squat-goblet",        name:"Кубковое приседание (Goblet Squat)", tags:["Тяжёлая гантель/гиря","Держать у груди"], desc:"Держи гантель вертикально у груди двумя руками. Помогает сохранить вертикальный корпус." },
+    { img:"legs-squat-hack",          name:"Гакк-приседание (Hack Squat Machine)", tags:["Тренажёр hack squat","Плечевые упоры","Блины"], desc:"Встань в тренажёр. Приседай по направляющим. Снижает нагрузку на поясницу." },
+    { img:"legs-extension-machine",   name:"Разгибание ног (Leg Extension Machine)", tags:["Тренажёр leg extension"], desc:"Сядь, голени под роликом. Разгибай ноги до полного выпрямления. Изолированная нагрузка на квадрицепс." },
+    { img:"legs-squat-smith-narrow",  name:"Приседание в Смите узкая постановка (Smith Machine Narrow Squat)", tags:["Тренажёр Смита","Узкая постановка ног"], desc:"Ноги узко (10-15 см). Присядь глубоко — квадрицепс под максимальной нагрузкой." }
+  ],
+  "Д3-2":[
+    { img:"legs-press-horizontal",  name:"Жим ногами горизонтально (Horizontal Leg Press)", tags:["Горизонтальный leg-press","Блины","Стопоры"], desc:"Расположи ступни на платформе на ширине плеч. Опускай платформу, сгибая колени до ~90°." },
+    { img:"legs-press-45deg",       name:"Жим ногами под углом 45° (45° Leg Press)", tags:["Наклонный leg-press","Блины","Стопоры"], desc:"Классический наклонный жим. Высокая постановка ног — ягодицы и бицепс бедра. Низкая — квадрицепс." },
+    { img:"legs-press-narrow",      name:"Акцент на квадрицепс — узкая постановка", tags:["Любой leg-press","Ноги на нижней части платформы"], desc:"Поставь ноги узко и низко. Это максимально загружает квадрицепс." },
+    { img:"legs-press-single",      name:"Жим ногами одной ногой (Single-Leg Press)", tags:["Любой leg-press","Одна нога"], desc:"Убери одну ногу. Нагрузка вдвое выше — устраняет дисбаланс." },
+    { img:"legs-press-sumo",        name:"Жим ногами «сумо» (Sumo Leg Press)", tags:["Наклонный leg-press","Ноги широко, носки ~45°"], desc:"Широкая постановка активирует внутреннюю часть бедра и ягодичные." },
+    { img:"legs-press-paused",      name:"Жим ногами с паузой (Paused Leg Press)", tags:["Любой leg-press","Пауза 2-3 сек"], desc:"Задержись в нижней точке на 2-3 секунды. Значительно сложнее при той же нагрузке." },
+    { img:"legs-extension-single",  name:"Разгибание ног одной ногой (Single-Leg Extension)", tags:["Тренажёр leg extension","Одна нога"], desc:"Разгибай поочерёдно. Изолирует каждый квадрицепс и выявляет дисбаланс." }
+  ],
+  "Д3-3":[
+    { img:"legs-lunge-walking",          name:"Шагающие выпады с гантелями (Walking Lunges)", tags:["Пара гантелей","Длинный коридор"], desc:"Широкий шаг вперёд, опусти заднее колено почти до пола. Шагающий вариант добавляет координационную нагрузку." },
+    { img:"legs-lunge-bulgarian",        name:"Болгарский сплит-присед (Bulgarian Split Squat)", tags:["Пара гантелей","Скамья для задней ноги"], desc:"Носок задней ноги на скамье. Присядь на передней ноге. Одно из лучших упражнений для ягодичных и квадрицепса." },
+    { img:"legs-lunge-barbell",          name:"Выпады со штангой (Barbell Lunges)", tags:["Гриф + блины","Силовая стойка"], desc:"Штанга на трапециях. Длинные шаги. Следи, чтобы переднее колено не выходило за носок." },
+    { img:"legs-lunge-reverse",          name:"Обратный выпад с гантелями (Reverse Lunge)", tags:["Пара гантелей","Свободное место"], desc:"Шагни назад. Это снижает нагрузку на коленный сустав." },
+    { img:"legs-stepup-dumbbell",        name:"Степ-ап с гантелями (Dumbbell Step-Up)", tags:["Пара гантелей","Платформа 40-50 см"], desc:"Шагни одной ногой на платформу, поднимись. Выше — больше ягодичных, ниже — квадрицепс." },
+    { img:"legs-lunge-bulgarian-smith",  name:"Болгарский присед в Смите (Smith Machine Bulgarian Split Squat)", tags:["Тренажёр Смита","Скамья"], desc:"Задняя нога на скамье, передняя под грифом Смита. Фиксированная траектория позволяет работать тяжелее." },
+    { img:"legs-lunge-reverse-smith",    name:"Обратный выпад в Смите (Smith Machine Reverse Lunge)", tags:["Тренажёр Смита"], desc:"Встань под грифом. Шагни назад. Смита обеспечивает стабильность. Безопаснее для коленного сустава." }
+  ],
+  "Д3-4":[
+    { img:"legs-rdl-barbell",       name:"Румынская тяга со штангой (Romanian Deadlift)", tags:["Гриф + блины","Ноги прямые/чуть согнутые"], desc:"Наклоняйся вперёд, отводя таз назад — штанга скользит вдоль бёдер. Спина всегда прямая." },
+    { img:"legs-rdl-dumbbell",      name:"Румынская тяга с гантелями", tags:["Пара гантелей","Ноги прямые/чуть согнутые"], desc:"Аналог штанги. Гантели позволяют вести их ближе к центру тела. Проще для новичков." },
+    { img:"legs-rdl-smith",         name:"Тренажёр Смита — румынская тяга", tags:["Тренажёр Смита","Контролируемое движение"], desc:"Фиксированная траектория упрощает удержание правильного положения спины." },
+    { img:"legs-rdl-cable-pull",    name:"Тяга нижнего блока к бёдрам (Cable Pull-Through)", tags:["Нижний блок","Канат-рукоять","Спиной к блоку"], desc:"Встань спиной к блоку, возьми канат между ног. Наклонись с прямой спиной. Выпрямись, напрягая ягодицы." },
+    { img:"legs-back-extension",    name:"Гиперэкстензия (Back Extension)", tags:["Тренажёр гиперэкстензии","С весом/без"], desc:"Зафикси бёдра в упоре. Опусти корпус вниз, поднимись до прямой линии." },
+    { img:"legs-rdl-single",        name:"Одноногая румынская тяга (Single-Leg RDL)", tags:["Одна гантель/гиря","Одна нога"], desc:"Стоя на одной ноге, наклоняйся вперёд, отводя другую ногу назад. Развивает баланс." },
+    { img:"legs-rdl-stiff",         name:"Тяга на прямых ногах (Stiff-Leg Deadlift)", tags:["Гриф + блины","Ноги строго прямые"], desc:"Ноги полностью прямые — максимальное растяжение бицепса бедра. Требует гибкости." }
+  ],
+  "Д3-5":[
+    { img:"legs-curl-lying",          name:"Сгибание ног лёжа (Lying Leg Curl)", tags:["Тренажёр leg-curl лёжа","Регулируемый упор"], desc:"Ляг, пятки под роликом. Сгибай ноги, поднимая пятки к ягодицам. Не отрывай таз от подушки." },
+    { img:"legs-curl-seated",         name:"Сгибание ног сидя (Seated Leg Curl)", tags:["Тренажёр leg-curl сидя"], desc:"Сидячий вариант меняет угол натяжения. Хорошо дополняет лёжачий вариант." },
+    { img:"legs-curl-standing",       name:"Сгибание ног стоя (Standing Leg Curl)", tags:["Тренажёр leg-curl стоя","Одна нога"], desc:"Встань, одна нога под роликом. Сгибай ногу. Одностороннее упражнение." },
+    { img:"legs-curl-cable-lying",    name:"Сгибание ног с блоком лёжа (Cable Leg Curl Lying)", tags:["Нижний блок","Ankle cuff","Скамья"], desc:"Присоедини манжет к лодыжке. Ляг лицом вниз. Кабель создаёт постоянное натяжение." },
+    { img:"legs-curl-nordic",         name:"Скандинавское сгибание (Nordic Hamstring Curl)", tags:["Партнёр/тренажёр","Вес тела"], desc:"Встань на колени. Медленно опускай тело вперёд. Одно из наиболее эффективных для профилактики травм." },
+    { img:"legs-curl-cable-standing", name:"Сгибание ног стоя с блоком (Standing Cable Leg Curl)", tags:["Нижний блок","Ankle cuff","Стоя"], desc:"Прицепи манжет к лодыжке. Сгибай ногу — пятка к ягодице." },
+    { img:"legs-curl-single",         name:"Сгибание ног поочерёдно в тренажёре (Single-Leg Leg Curl)", tags:["Тренажёр leg-curl","Одна нога"], desc:"Сгибай поочерёдно. Начинай со слабой ноги." }
+  ],
+  "Д3-6":[
+    { img:"calf-raise-standing",    name:"Подъём на носки стоя (Standing Calf Raise)", tags:["Тренажёр standing calf raise","Или штанга + ступенька"], desc:"Встань на ступеньку, пятки свисают. Медленно опускайся, затем поднимайся на носок." },
+    { img:"calf-raise-seated",      name:"Подъём на носки сидя (Seated Calf Raise)", tags:["Тренажёр seated calf raise"], desc:"Отягощение на коленях. Согнутое колено изолирует камбаловидную мышцу." },
+    { img:"calf-raise-leg-press",   name:"Подъём на носки в leg-press", tags:["Тренажёр leg-press","Пятки на краю платформы"], desc:"Расположи носки на краю платформы. Подъём/опускание только голеностопом. Можно использовать большой вес." },
+    { img:"calf-raise-hack",        name:"Подъём на носки на гакк-машине (Hack Squat Calf Raise)", tags:["Тренажёр hack squat","Носки на краю"], desc:"Носки на краю, пятки свисают. Большой вес без осевой нагрузки." },
+    { img:"calf-raise-single",      name:"Подъём на носки одной ногой с гантелью", tags:["Одна гантель","Край ступеньки","Одна нога"], desc:"Встань на ступеньку на одной ноге. Нагрузка вдвое выше." },
+    { img:"calf-raise-machine",     name:"Тренажёр standing calf raise (Standing Calf Raise Machine)", tags:["Тренажёр с плечевыми упорами","Стек/блины"], desc:"Встань под упоры, носки на краю. Поднимайся максимально высоко, опускайся максимально глубоко." },
+    { img:"calf-raise-leg-press",   name:"Подъём на носки в leg-press (Calf Press on Leg Press)", tags:["Любой leg-press","Носки на краю"], desc:"Носки на краю платформы. Очень большой вес безопасно." }
+  ],
+  "Д4-1":[
+    { img:"chest-decline-barbell",  name:"Штанга на скамье decline (Decline Bench Press)", tags:["Гриф + блины","Скамья decline","Стойки"], desc:"Угол 15–30° вниз. Зафикси ноги. Опускай штангу к нижней части груди. Максимально изолирует нижний пучок." },
+    { img:"chest-decline-dumbbell", name:"Гантели на скамье decline", tags:["Пара гантелей","Скамья decline"], desc:"Аналог штанги, но с гантелями. Большая амплитуда и разнообразие хвата." },
+    { img:"chest-decline-smith",    name:"Тренажёр Смита — decline", tags:["Тренажёр Смита","Скамья decline"], desc:"Наклонная скамья под тренажёром Смита. Используй стопоры на безопасной высоте." },
+    { img:"chest-decline-machine",  name:"Тренажёр жим decline (Decline Chest Press Machine)", tags:["Selectorized decline press","Спинка ~15-20° вниз"], desc:"Тренажёрный аналог. Безопаснее свободных весов." },
+    { img:"chest-decline-pushup",   name:"Отжимания с ногами на возвышении (Decline Push-Up)", tags:["Скамья/степ","Ноги на возвышении"], desc:"Ноги на скамью, руки на пол. Добавь жилет при необходимости." },
+    { img:"chest-dips",             name:"Отжимания на брусьях с наклоном (Chest-Focused Dips)", tags:["Параллельные брусья","Наклон ~30-40°"], desc:"Наклони корпус вперёд — больше нагрузки на нижнюю часть груди." },
+    { img:"chest-decline-cable",    name:"Кроссовер с нижних блоков (Low-to-High Cable Crossover)", tags:["Нижние блоки","D-рукояти"], desc:"Возьми нижние блоки, веди руки снизу вверх, сводя на уровне нижней части груди." }
+  ],
+  "Д4-2":[
+    { img:"chest-fly-cable-high",    name:"Кроссовер — верхние блоки (High Cable Fly)", tags:["Блочная рама","Два верхних блока","D-рукояти"], desc:"Возьми верхние блоки, шаг вперёд. Веди руки по дуге вниз и вперёд, сводя перед животом." },
+    { img:"chest-fly-pecdeck",       name:"Тренажёр «Бабочка» / Pec-Deck", tags:["Тренажёр pec-deck","Регулируемые упоры"], desc:"Своди руки перед грудью, задерживаясь на 1–2 секунды." },
+    { img:"chest-fly-dumbbell-flat", name:"Разводка гантелями лёжа (Dumbbell Fly)", tags:["Пара гантелей","Горизонтальная скамья"], desc:"Ляг горизонтально. Разводи руки широкой дугой вниз, сохраняя лёгкий изгиб в локтях." },
+    { img:"chest-fly-cable-mid",     name:"Кроссовер на среднем уровне (Mid-Level Cable Crossover)", tags:["Блоки на уровне плеч","D-рукояти"], desc:"Блоки на высоте плеч. Своди руки горизонтально перед грудью." },
+    { img:"chest-fly-cable-single",  name:"Сведение одной рукой (Single-Arm Cable Fly)", tags:["Один блок","D-рукоять"], desc:"Работа одной рукой. Свободная рука держится за стойку. Исправляет дисбаланс." },
+    { img:"chest-fly-lever",         name:"Рычажный тренажёр разводка (Plate-Loaded Fly)", tags:["Рычажный тренажёр","Блины","Независимые рычаги"], desc:"Имитирует разводку гантелями с большим весом. Меньший риск травмы плеча." },
+    { img:"chest-fly-dual-cable",    name:"Функциональный тренажёр — сведение (Dual Cable Fly)", tags:["Функциональный тренажёр","D-рукояти"], desc:"Позволяет установить блоки на любую высоту. Полная свобода в выборе угла." }
+  ],
+  "Д4-3":[
+    { img:"tri-dips-weighted",       name:"Отжимания на брусьях с отягощением (Weighted Dips)", tags:["Параллельные брусья","Пояс с блином/жилет"], desc:"Наклони корпус вперёд — акцент на грудные. Опускайся до угла 90° в локтях или ниже." },
+    { img:"tri-dips-assisted",       name:"Тренажёр для диппинга (Assisted Dip Machine)", tags:["Тренажёр dip/chin","Контрвес"], desc:"Если упражнение слишком тяжёлое — используй контрвес. Хорошо для новичков." },
+    { img:"tri-press-close-grip",    name:"Жим узким хватом (Close-Grip Bench Press)", tags:["Гриф + блины","Хват 20-25 см","Горизонтальная скамья"], desc:"Хват узкий, локти близко к телу. Максимальная нагрузка на трицепс." },
+    { img:"tri-dips-machine",        name:"Тренажёр диппинг с грузом (Weighted Dip Machine)", tags:["Тренажёр с рычагами","Стек/блины"], desc:"Тренажёрная версия дипсов с фиксированной траекторией." },
+    { img:"tri-pushup-wide",         name:"Отжимания широким хватом (Wide Push-Up)", tags:["Вес тела","Руки шире плеч на 15-20 см"], desc:"Шире хват — больше нагрузки на грудные. Добавь жилет при необходимости." },
+    { img:"tri-pushdown-single",     name:"Разгибание одной рукой (Single-Arm Cable Pushdown)", tags:["Верхний блок","D-рукоять","Одна рука"], desc:"Аналог двуручного pushdown, но одной рукой. Контролируешь каждую сторону." },
+    { img:"tri-kickback-cable",      name:"Разгибание к бедру одной рукой (Single-Arm Kickback on Cable)", tags:["Нижний блок","D-рукоять","Наклон ~45°"], desc:"Наклонись. Локоть у корпуса. Разгибай предплечье назад. Кабель обеспечивает постоянное натяжение." }
+  ],
+  "Д4-4":[
+    { img:"back-pulldown-behind-neck",  name:"Тяга верхнего блока за голову (Lat Pulldown Behind Neck)", tags:["Верхний блок","Широкая рукоять"], desc:"Наклони голову вперёд, опускай гриф к задней части шеи. При проблемах с шеей/плечами — выбери тягу к груди." },
+    { img:"back-pulldown-machine-behind",name:"Тренажёр lat-pulldown — хват за голову", tags:["Тренажёр lat-pulldown","Широкий нейтральный хват"], desc:"Тренажёрный вариант. Перед выполнением обязательно разомнись." },
+    { img:"back-pulldown-straight-arm", name:"Тяга прямыми руками вниз (Straight-Arm Lat Pulldown)", tags:["Верхний блок","Прямая рукоять/канат"], desc:"Прямые руки тяни вниз и назад по дуге до бёдер. Изолирует широчайшие без бицепса." },
+    { img:"back-pullover-dumbbell",     name:"Пуловер с гантелью лёжа (Dumbbell Pullover)", tags:["Тяжёлая гантель","Горизонтальная скамья"], desc:"Держи гантель двумя руками. Опусти за голову по дуге, растягивая широчайшие." },
+    { img:"back-pullover-machine",      name:"Тренажёр-пуловер (Pullover Machine / Nautilus)", tags:["Тренажёр pullover","Рычаг давишь локтями"], desc:"Сядь, упри локти на подушки рычага. Толкай рычаг локтями вниз и вперёд." },
+    { img:"back-pulldown-neutral",      name:"Тяга с нейтральным хватом (Neutral-Grip Pulldown)", tags:["Верхний блок","V-рукоять"], desc:"Тяни к нижней части груди — локти вдоль корпуса. Нейтральный хват удобен для запястий." },
+    { img:"back-pullup-neutral",        name:"Подтягивания нейтральным хватом (Neutral Grip Pull-Up)", tags:["Турник с параллельными рукоятями"], desc:"Нейтральный хват снижает нагрузку на плечевой сустав и активнее включает бицепс." }
+  ],
+  "Д4-5":[
+    { img:"back-row-dumbbell-single",  name:"Тяга гантели одной рукой (One-Arm Dumbbell Row)", tags:["Одна гантель","Опора рукой о скамью"], desc:"Тяни гантель к бедру, ведя локоть высоко. В верхней точке лопатка должна быть сведена." },
+    { img:"back-row-cable-single",     name:"Тяга горизонтального блока одной рукой (Single-Arm Cable Row)", tags:["Горизонтальный блок","D-рукоять"], desc:"Тяни одной рукой, позволяя корпусу немного разворачиваться." },
+    { img:"back-row-machine-single",   name:"Тренажёр для тяги одной рукой", tags:["Тренажёр chest-supported row одной рукой"], desc:"Ляг грудью на упор. Тяни одной рукой к бедру. Полная изоляция без читинга." },
+    { img:"back-row-lever-single",     name:"Рычажный тренажёр одной рукой (Hammer Strength Row)", tags:["Рычажный тренажёр","Блины","Одна рука"], desc:"Сядь. Тяни одним рычагом к боку. Позволяет работать с большим весом." },
+    { img:"back-row-cable-side",       name:"Тяга нижнего блока к боку стоя (Low Cable Row Standing)", tags:["Нижний блок","D-рукоять","Стоя"], desc:"Встань боком. Тяни рукоять к боку — локоть ведёт движение." },
+    { img:"back-row-trx-single",       name:"TRX-тяга одной рукой (TRX Single-Arm Row)", tags:["Подвесные петли TRX","Крепление на высоте груди"], desc:"Откинься назад. Тяни себя к руке, удерживая корпус прямым." },
+    { img:"back-row-kroc",             name:"Тяга гантели тяжёлая (Kroc Row)", tags:["Очень тяжёлая гантель","Опора рукой"], desc:"Экстремальный вариант с максимальным весом. Для опытных атлетов." }
+  ],
+  "Д4-6":[
+    { img:"bi-curl-reverse-barbell",  name:"Сгибание со штангой обратным хватом (Reverse Barbell Curl)", tags:["EZ-гриф/прямой гриф","Пронированный хват"], desc:"Возьми гриф хватом сверху. Сгибай предплечья. Акцент на брахиалис и брахиорадиалис." },
+    { img:"bi-curl-reverse-dumbbell", name:"Сгибание с гантелями обратным хватом (Reverse Dumbbell Curl)", tags:["Пара гантелей","Пронированный хват"], desc:"Аналог штанги с гантелями. Ладони смотрят вниз на протяжении всего движения." },
+    { img:"bi-curl-reverse-cable",    name:"Тяга нижнего блока обратным хватом (Cable Reverse Curl)", tags:["Нижний блок","Прямая рукоять","Хват сверху"], desc:"Постоянное натяжение по всей амплитуде. Медленное контролируемое движение." },
+    { img:"bi-curl-hammer",           name:"Молотковые сгибания (Hammer Curl)", tags:["Пара гантелей","Нейтральный хват"], desc:"Ладони друг к другу. Акцент на брахиалис и плечелучевую мышцу." },
+    { img:"bi-curl-zottman",          name:"Zottman Curl (разворот в верхней точке)", tags:["Пара гантелей","Стоя"], desc:"Подъём с супинацией. В верхней точке разворот в пронацию. Опускай обратным хватом." },
+    { img:"bi-curl-reverse-preacher", name:"Обратные сгибания на скамье Скотта (Reverse Preacher Curl)", tags:["EZ-гриф","Скамья Скотта","Обратный хват"], desc:"Как обычная скамья Скотта, но хват сверху. Изолирует брахиалис. Без читинга." },
+    { img:"bi-curl-hammer-cross",     name:"Крест-боди молотковый кёрл (Cross-Body Hammer Curl)", tags:["Одна гантель","Нейтральный хват","Стоя"], desc:"Нейтральный хват, гантель к противоположному плечу через тело. Чередуй руки." }
+  ]
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   РАСПИСАНИЕ ТРЕНИРОВОК (workoutSchedule)
+   ────────────────────────────────────────
+   Объект-расписание: ключ = номер тренировочного дня (Д1–Д4).
+   Дни недели не фиксированы — пользователь тренируется в удобные дни.
+
+   Каждый тренировочный день содержит:
+   {
+     name: string         — Короткое имя (PUSH A, PULL A, LEGS, ...)
+     full: string         — Полное описание для хедера
+     exercises: Array<{   — Массив из 6 упражнений:
+       id: number         — Уникальный номер (1–6) для маппинга вариантов
+       type: string       — Тип движения (Жим, Тяга, Присед, ...)
+       muscle: string     — Целевая мышечная группа
+       movement: string   — Описание движения (показывается в списке)
+     }>
+   }
+
+   Сплит PPL (Push / Pull / Legs):
+   • Д1 — PUSH A:      грудь (горизонт/наклон), плечи, разводка, трицепс
+   • Д2 — PULL A:      спина (верт/горизонт), бицепс, задние дельты
+   • Д3 — LEGS:        присед, жим ногами, выпады, румынская тяга, икры
+   • Д4 — PUSH B + PULL B: вариации жимов, тяг, брусья
+   ═══════════════════════════════════════════════════════════════════════════ */
+const workoutSchedule = {
+  "Д1":{ name:"PUSH A", full:"PUSH A — Грудь, плечи, трицепс", exercises:[
+    {id:1,type:"Жим",      muscle:"Грудь (нижняя)",             movement:"Горизонтально лёжа с утяжелением"},
+    {id:2,type:"Жим",      muscle:"Грудь (верхняя)",             movement:"Под углом 30–45° с утяжелением"},
+    {id:3,type:"Жим",      muscle:"Плечи (пер. + сред. дельты)", movement:"Над головой стоя/сидя с утяжелением"},
+    {id:4,type:"Разводка", muscle:"Грудь",                       movement:"Лёжа с утяжелением"},
+    {id:5,type:"Подъём",   muscle:"Плечи (средние дельты)",      movement:"В стороны с утяжелением"},
+    {id:6,type:"Разгибание",muscle:"Трицепс",                    movement:"В локте с утяжелением"}
+  ]},
+  "Д2":{ name:"PULL A", full:"PULL A — Спина, бицепс, задние дельты", exercises:[
+    {id:1,type:"Тяга",     muscle:"Спина (широчайшие)",           movement:"Вертикально к груди с утяжелением"},
+    {id:2,type:"Тяга",     muscle:"Спина (середина)",             movement:"Горизонтально к поясу с утяжелением"},
+    {id:3,type:"Тяга",     muscle:"Спина (ромбовидные, трапеция)",movement:"В наклоне с утяжелением"},
+    {id:4,type:"Сгибание", muscle:"Бицепс",                      movement:"В локте с утяжелением"},
+    {id:5,type:"Разводка", muscle:"Плечи (задние дельты)",        movement:"В наклоне с утяжелением"},
+    {id:6,type:"Тяга",     muscle:"Задние дельты + трапеция",    movement:"К лицу с утяжелением"}
+  ]},
+  "Д3":{ name:"LEGS", full:"LEGS — Квадрицепс, ягодичные, бицепс бедра, икры", exercises:[
+    {id:1,type:"Присед",   muscle:"Квадрицепс + ягодичные",      movement:"С утяжелением"},
+    {id:2,type:"Жим",      muscle:"Квадрицепс + ягодичные",      movement:"Ногами с утяжелением"},
+    {id:3,type:"Выпад",    muscle:"Квадрицепс + ягодичные",      movement:"С утяжелением"},
+    {id:4,type:"Тяга",     muscle:"Бицепс бедра + ягодичные",    movement:"Румынская с утяжелением"},
+    {id:5,type:"Сгибание", muscle:"Бицепс бедра",                movement:"В колене с утяжелением"},
+    {id:6,type:"Подъём",   muscle:"Икры",                        movement:"На носки с утяжелением"}
+  ]},
+  "Д4":{ name:"PUSH B + PULL B", full:"PUSH B + PULL B — Вариации", exercises:[
+    {id:1,type:"Жим",      muscle:"Грудь (нижняя)",              movement:"Под обратным углом с утяжелением"},
+    {id:2,type:"Сведение", muscle:"Грудь",                       movement:"Перед собой с утяжелением"},
+    {id:3,type:"Отжимание",muscle:"Грудь + трицепс",             movement:"На брусьях с утяжелением"},
+    {id:4,type:"Тяга",     muscle:"Спина (широчайшие)",          movement:"Вертикально за голову с утяжелением"},
+    {id:5,type:"Тяга",     muscle:"Спина (середина)",            movement:"Одной рукой в наклоне с утяжелением"},
+    {id:6,type:"Сгибание", muscle:"Бицепс",                      movement:"В локте обратным хватом с утяжелением"}
+  ]}
+};
+
+/**
+ * Маппинг ключей тренировочных дней → полные названия (на русском).
+ * Используется в карточках дней на главном экране.
+ * @type {Object.<string, string>}
+ */
+const dayFullNames = {"Д1":"ДЕНЬ 1","Д2":"ДЕНЬ 2","Д3":"ДЕНЬ 3","Д4":"ДЕНЬ 4"};
+
+/**
+ * Порядок тренировочных дней для итерации (Д1 → Д4).
+ * Используется при рендере сетки дней (UI.renderHome).
+ * @type {string[]}
+ */
+const DAYS_ORDER = ["Д1","Д2","Д3","Д4"];
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP — Управление состоянием и данными
+   ──────────────────────────────────────
+   Центральный объект приложения. Отвечает за:
+   • Хранение runtime-состояния (App.state)
+   • Персистентные данные в localStorage (App.persist)
+   • Загрузку и сохранение данных
+   • Управление неделей (авто-сброс, ручной сброс)
+   • Расчёт прогресса батареи
+   • Экспорт/импорт данных
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Ключ localStorage для сохранения всех данных.
+ * Версионирован ('gb_v3') для безопасной миграции при изменении схемы.
+ * @type {string}
+ */
+const STORAGE_KEY = 'gb_v3';
+
+const App = {
+  /**
+   * Runtime-состояние (НЕ сохраняется в localStorage).
+   * Живёт только в течение одной сессии.
+   *
+   * @property {string|null} currentDay     — Текущий выбранный день ("Д1", "Д2", ...)
+   * @property {Array}       queue          — Очередь оставшихся упражнений
+   * @property {number}      totalExercises — Всего упражнений в дне (обычно 6)
+   * @property {number}      completedCount — Сколько завершено
+   * @property {number|null} currentExercise — Индекс текущего упражнения в queue
+   * @property {string|null} currentVarKey  — Ключ выбранного варианта ("Д1-1")
+   * @property {number|null} currentVarIdx  — Индекс варианта (0–6)
+   * @property {number}      setsCompleted  — Завершённые подходы в текущем варианте
+   * @property {Array<{weight:number, reps:number}>} setData — Данные подходов
+   */
+  state: {
+    currentDay: null,
+    queue: [],
+    totalExercises: 0,
+    completedCount: 0,
+    currentExercise: null,
+    currentVarKey: null,
+    currentVarIdx: null,
+    setsCompleted: 0,
+    setData: [],
+  },
+
+  /**
+   * Персистентные данные (сохраняются в localStorage).
+   *
+   * @property {Object}  doneDays   — Завершённые дни: {"Д1": true, "Д2": true}
+   * @property {Object}  progress   — Незавершённые тренировки (для возобновления)
+   * @property {Array}   history    — История тренировок (max 100 записей)
+   * @property {string}  weekStart  — ISO-дата понедельника текущей недели
+   * @property {Object}  settings   — Настройки пользователя
+   * @property {number}  settings.setsCount    — Кол-во подходов (2–6, по умолчанию 3)
+   * @property {number}  settings.restSeconds  — Таймер отдыха (30–300, по умолчанию 90)
+   */
+  persist: {
+    doneDays: {},
+    progress: {},
+    history: [],
+    weekStart: null,
+    settings: {
+      setsCount: 3,
+      restSeconds: 90,
+    }
+  },
+
+  /**
+   * ID таймера отдыха (setInterval).
+   * Хранится здесь для возможности clearInterval при пропуске.
+   * @type {number|null}
+   */
+  restTimerId: null,
+
+  /* ── Работа с localStorage ── */
+
+  /**
+   * Загружает данные из localStorage.
+   * Если ключ 'gb_v3' существует — мержит с дефолтным persist.
+   * После загрузки проверяет необходимость сброса недели.
+   */
+  load() {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      if (s) {
+        const data = JSON.parse(s);
+        if (data.doneDays)  this.persist.doneDays  = data.doneDays;
+        if (data.progress)  this.persist.progress  = data.progress;
+        if (data.history)   this.persist.history   = data.history;
+        if (data.weekStart) this.persist.weekStart = data.weekStart;
+        if (data.settings)  this.persist.settings  = { ...this.persist.settings, ...data.settings };
+      }
+    } catch(e) {
+      /* localStorage недоступен — работаем без персистенции */
+    }
+    this.checkWeekReset();
+  },
+
+  /**
+   * Сохраняет persist в localStorage.
+   * Вызывается после каждого изменения данных.
+   */
+  save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.persist)); } catch(e) {}
+  },
+
+  /**
+   * Сохраняет промежуточный прогресс текущей тренировки.
+   * Позволяет возобновить тренировку при случайном выходе.
+   */
+  saveProgress() {
+    const s = this.state;
+    if (!s.currentDay) return;
+    /* Если тренировка полностью завершена — не сохраняем прогресс */
+    if (s.queue.length === 0 && s.completedCount === s.totalExercises) return;
+    this.persist.progress[s.currentDay] = {
+      completedCount: s.completedCount,
+      totalExercises: s.totalExercises,
+      queue: s.queue
+    };
+    this.save();
+  },
+
+  /**
+   * Удаляет сохранённый прогресс для конкретного дня.
+   * Вызывается после успешного завершения тренировки.
+   * @param {string} day — день ("Д1", "Д2", ...)
+   */
+  clearProgress(day) {
+    delete this.persist.progress[day];
+    this.save();
+  },
+
+  /* ── Управление неделей ── */
+
+  /**
+   * Вычисляет дату понедельника для заданной даты.
+   * Используется для определения «текущей недели».
+   *
+   * @param {Date} d — любая дата
+   * @returns {string} — ISO-дата понедельника (YYYY-MM-DD)
+   *
+   * @example
+   * App.getMonday(new Date('2026-02-28')) // → "2026-02-23" (понедельник)
+   */
+  getMonday(d) {
+    const date = new Date(d);
+    const day = date.getDay();  /* 0=ВС, 1=ПН, ..., 6=СБ */
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(date.setDate(diff)).toISOString().slice(0, 10);
+  },
+
+  /**
+   * Проверяет необходимость авто-сброса недели.
+   * Если текущий понедельник ≠ сохранённому — сбрасывает прогресс.
+   * Вызывается при каждой загрузке приложения (из App.load).
+   */
+  checkWeekReset() {
+    const currentMonday = this.getMonday(new Date());
+    if (this.persist.weekStart && this.persist.weekStart !== currentMonday) {
+      this.resetWeek(false);  /* Тихий сброс без toast */
+    }
+    this.persist.weekStart = currentMonday;
+    this.save();
+  },
+
+  /**
+   * Сбрасывает прогресс текущей недели.
+   * Очищает doneDays и progress, обновляет weekStart.
+   *
+   * @param {boolean} [showToast=true] — показывать ли уведомление
+   */
+  resetWeek(showToast = true) {
+    this.persist.doneDays = {};
+    this.persist.progress = {};
+    this.persist.weekStart = this.getMonday(new Date());
+    this.save();
+    UI.renderHome();
+    if (showToast) UI.toast('Неделя сброшена ⚡');
+  },
+
+  /**
+   * Подсчитывает количество завершённых дней в текущей неделе.
+   * @returns {number} — кол-во дней с doneDays[day] === true
+   */
+  getCompletedDays() {
+    return Object.keys(this.persist.doneDays).filter(d => this.persist.doneDays[d]).length;
+  },
+
+  /* ── Расчёт прогресса батареи ── */
+
+  /**
+   * Вычисляет процент заряда батареи (0–100).
+   * Формула: (completedCount / totalExercises) × 100.
+   * @returns {number} — процент (целое число)
+   */
+  getBatteryPct() {
+    const s = this.state;
+    return s.totalExercises ? Math.round(s.completedCount / s.totalExercises * 100) : 0;
+  },
+
+  /**
+   * Обновляет ВСЕ элементы батарейки на странице.
+   * Находит .battery-fill и .battery-pct на всех экранах и синхронизирует.
+   * При 100% добавляет класс .full (сплошная заливка).
+   */
+  updateBattery() {
+    const pct = this.getBatteryPct();
+    const w = pct + '%';
+    document.querySelectorAll('.battery-fill').forEach(el => {
+      el.style.width = w;
+      pct >= 100 ? el.classList.add('full') : el.classList.remove('full');
+    });
+    document.querySelectorAll('.battery-pct').forEach(el => {
+      el.textContent = pct + '%';
+    });
+  },
+
+  /* ── Экспорт / Импорт данных ── */
+
+  /**
+   * Экспортирует все данные в JSON-файл.
+   * Создаёт Blob → objectURL → скачивает через <a>.
+   * Имя файла: gym-battery-backup-YYYY-MM-DD.json
+   */
+  exportData() {
+    const blob = new Blob([JSON.stringify(this.persist, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gym-battery-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    UI.toast('Данные экспортированы 📦');
+  },
+
+  /**
+   * Импортирует данные из JSON-файла.
+   * Создаёт скрытый <input type="file">, читает FileReader.
+   * Валидирует наличие doneDays перед применением.
+   */
+  importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          /* Минимальная валидация: проверяем наличие ключевого поля */
+          if (data.doneDays !== undefined) {
+            this.persist = { ...this.persist, ...data };
+            this.save();
+            UI.renderHome();
+            UI.toast('Данные импортированы ✓');
+          } else {
+            UI.toast('Неверный формат файла');
+          }
+        } catch(e) {
+          UI.toast('Ошибка чтения файла');
+        }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
+  }
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UI — Рендеринг и навигация
+   ──────────────────────────
+   Отвечает за:
+   • Переключение экранов (showScreen)
+   • Рендер главного экрана (renderHome)
+   • Рендер статистики (renderStats)
+   • Рендер настроек (renderSettings)
+   • Toast-уведомления
+   • Тактильная обратная связь (haptic)
+   • Модальные диалоги подтверждения
+   ═══════════════════════════════════════════════════════════════════════════ */
+const UI = {
+
+  /**
+   * Переключает активный экран.
+   * Текущий экран получает .exit (уходит влево с fade),
+   * затем .exit удаляется через 260ms.
+   * Новый экран получает .active (появляется справа).
+   * Автоматически скроллит контент наверх.
+   *
+   * @param {string} id — id целевого экрана (screen-home, screen-workout, ...)
+   */
+  showScreen(id) {
+    document.querySelectorAll('.screen.active').forEach(s => {
+      s.classList.remove('active');
+      s.classList.add('exit');
+      setTimeout(() => s.classList.remove('exit'), 260);
+    });
+    const next = document.getElementById(id);
+    next.classList.add('active');
+    /* Скролл контента в начало */
+    const sc = next.querySelector('.detail-scroll') || next.querySelector('.scroll-body');
+    if (sc) sc.scrollTop = 0;
+  },
+
+  /**
+   * Показывает toast-уведомление на 2.2 секунды.
+   * @param {string} msg — текст уведомления
+   */
+  toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 2200);
+  },
+
+  /**
+   * Тактильная обратная связь (вибрация).
+   * Использует Vibration API (поддерживается на Android).
+   * На iOS не работает, но вызов безопасен (проверка navigator.vibrate).
+   *
+   * @param {number} [ms=15] — длительность вибрации в миллисекундах
+   */
+  haptic(ms = 15) {
+    if (navigator.vibrate) navigator.vibrate(ms);
+  },
+
+  /**
+   * Показывает модальный диалог подтверждения.
+   * Возвращает Promise<boolean>: true = подтвердил, false = отменил.
+   * Автоматически очищает обработчики при закрытии.
+   *
+   * @param {string} title — заголовок диалога
+   * @param {string} text  — текст-описание
+   * @returns {Promise<boolean>}
+   *
+   * @example
+   * const ok = await UI.confirm('Сброс?', 'Данные будут удалены.');
+   * if (ok) { App.resetWeek(); }
+   */
+  confirm(title, text) {
+    return new Promise(resolve => {
+      document.getElementById('dialog-title').textContent = title;
+      document.getElementById('dialog-text').textContent = text;
+      document.getElementById('dialog').classList.add('visible');
+      const onConfirm = () => { cleanup(); resolve(true); };
+      const onCancel  = () => { cleanup(); resolve(false); };
+      const cleanup = () => {
+        document.getElementById('dialog').classList.remove('visible');
+        document.getElementById('dialog-confirm').removeEventListener('click', onConfirm);
+        document.getElementById('dialog-cancel').removeEventListener('click', onCancel);
+      };
+      document.getElementById('dialog-confirm').addEventListener('click', onConfirm);
+      document.getElementById('dialog-cancel').addEventListener('click', onCancel);
+    });
+  },
+
+  /* ══════════════════════════════════════
+     renderHome — Рендер главного экрана
+     ══════════════════════════════════════ */
+
+  /**
+   * Рендерит главный экран:
+   * 1. Week bar — строка прогресса недели
+   * 2. Day grid — сетка из 7 карточек дней
+   *
+   * Каждая карточка определяет своё состояние:
+   * • inactive  — день отдыха (СР, СБ, ВС)
+   * • done      — тренировка завершена
+   * • partial   — тренировка начата, но не завершена
+   * • available — доступна для запуска
+   */
+  renderHome() {
+    /* ── Week bar ── */
+    const completed = App.getCompletedDays();
+    const total = DAYS_ORDER.length;  /* = 4 тренировочных дня */
+    document.getElementById('week-bar').innerHTML = `
+      <div class="week-info">Неделя: <strong>${completed} / ${total}</strong> тренировок</div>
+      <div class="week-actions">
+        <button class="week-btn danger" id="btn-reset-week">↻ Сброс</button>
+      </div>`;
+
+    /* ── Day grid ── */
+    const grid = document.getElementById('day-grid');
+    grid.innerHTML = '';
+    DAYS_ORDER.forEach(day => {
+      const data = workoutSchedule[day];
+      const isDone = !!App.persist.doneDays[day];
+      const isActive = !!data;   /* все 4 дня активны, null невозможен */
+      const partial = App.persist.progress[day];
+
+      const card = document.createElement('div');
+      /* ARIA-атрибуты для доступности */
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', isActive && !isDone ? '0' : '-1');
+      card.setAttribute('aria-label', `${dayFullNames[day]} — ${isDone ? 'Завершено' : isActive ? data.name : 'Отдых'}`);
+
+      /* Определяем CSS-класс состояния */
+      let className = 'day-card ';
+      if (!isActive) className += 'inactive';
+      else if (isDone) className += 'done';
+      else if (partial) className += 'partial';
+      else className += 'available';
+      card.className = className;
+
+      /* Определяем данные для отображения */
+      let fillPct = 0, restLabel, countHtml = '';
+      if (isDone) {
+        fillPct = 100; restLabel = 'ЗАРЯЖЕНА';
+        countHtml = '<span class="day-count">100%</span>';
+      } else if (partial) {
+        fillPct = Math.round(partial.completedCount / partial.totalExercises * 100);
+        restLabel = data.name;
+        countHtml = `<span class="day-count">${fillPct}% · продолжить</span>`;
+      } else if (isActive) {
+        fillPct = 0; restLabel = data.name;
+        countHtml = `<span class="day-count">${data.exercises.length} упр.</span>`;
+      } else {
+        restLabel = '// ОТДЫХ';
+      }
+
+      card.innerHTML = `
+        <div class="day-fill"></div>
+        <div><div class="day-label">${day}</div><div class="day-name">${dayFullNames[day]}</div></div>
+        <div class="day-mini-bat">
+          <div class="day-mini-bat-outer"><div class="day-mini-bat-fill" style="width:${fillPct}%"></div></div>
+          <div class="day-workout-label">${restLabel}${countHtml}</div>
+        </div>`;
+
+      /* Клик — запуск тренировки (только для активных незавершённых дней) */
+      if (isActive && !isDone) {
+        card.addEventListener('click', () => Workout.start(day));
+      }
+      grid.appendChild(card);
+    });
+  },
+
+  /* ══════════════════════════════════════
+     renderStats — Рендер экрана статистики
+     ══════════════════════════════════════ */
+
+  /**
+   * Рендерит экран статистики:
+   * 1. Карточка «Текущая неделя» — тренировки, упражнения, подходы, объём
+   * 2. Карточка «История» — последние 20 тренировок (дата, день, объём)
+   * 3. Карточка «Данные» — кнопки экспорта/импорта
+   */
+  renderStats() {
+    const history = App.persist.history;
+    const container = document.getElementById('stats-content');
+
+    /* Фильтруем тренировки текущей недели (сравниваем понедельники) */
+    const weekHistory = history.filter(h => {
+      const hMonday = App.getMonday(new Date(h.date));
+      return hMonday === App.persist.weekStart;
+    });
+
+    /* Агрегация: объём, подходы, упражнения за неделю */
+    const totalVolume = weekHistory.reduce((sum, h) => sum + (h.totalVolume || 0), 0);
+    const totalSets = weekHistory.reduce((sum, h) =>
+      sum + h.exercises.reduce((s2, ex) => s2 + ex.sets.filter(s => s.weight > 0 || s.reps > 0).length, 0), 0);
+    const totalExercises = weekHistory.reduce((sum, h) => sum + h.exercises.length, 0);
+
+    let html = `
+      <div class="stat-card">
+        <div class="stat-card-title">// Текущая неделя</div>
+        <div class="stat-row">
+          <span class="stat-label">Тренировок</span>
+          <span class="stat-value">${weekHistory.length}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Упражнений</span>
+          <span class="stat-value">${totalExercises}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Подходов</span>
+          <span class="stat-value">${totalSets}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Общий объём</span>
+          <span class="stat-value">${totalVolume > 0 ? totalVolume.toLocaleString('ru') + ' кг' : '—'}</span>
+        </div>
+      </div>`;
+
+    /* ── История тренировок (последние 20) ── */
+    html += `<div class="stat-card"><div class="stat-card-title">// История тренировок</div>`;
+    if (history.length === 0) {
+      html += `<div class="stat-row"><span class="stat-label">Пока пусто</span><span class="stat-value dim">—</span></div>`;
+    } else {
+      const shown = history.slice(-20).reverse();  /* Новые сверху */
+      shown.forEach(h => {
+        const d = new Date(h.date);
+        const dateStr = d.toLocaleDateString('ru', { day: 'numeric', month: 'short', weekday: 'short' });
+        const vol = h.totalVolume ? ` · ${h.totalVolume.toLocaleString('ru')} кг` : '';
+        html += `
+          <div class="history-item">
+            <div class="history-date">${dateStr}</div>
+            <div class="history-summary"><strong>${h.day} · ${h.name}</strong> — ${h.exercises.length} упр.${vol}</div>
+          </div>`;
+      });
+    }
+    html += `</div>`;
+
+    /* ── Кнопки экспорта/импорта ── */
+    html += `
+      <div class="stat-card">
+        <div class="stat-card-title">// Данные</div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-primary" id="btn-export" style="flex:1">📦 Экспорт</button>
+          <button class="btn btn-ghost" id="btn-import" style="flex:1">📂 Импорт</button>
+        </div>
+      </div>`;
+
+    container.innerHTML = html;
+  },
+
+  /* ══════════════════════════════════════
+     renderSettings — Рендер настроек
+     ══════════════════════════════════════ */
+
+  /**
+   * Рендерит экран настроек:
+   * 1. Подходов на упражнение (2–6)  — кнопки ±
+   * 2. Таймер отдыха (30–300 сек)    — кнопки ± с шагом 15с
+   * 3. Очистка всех данных           — с подтверждением
+   */
+  renderSettings() {
+    const s = App.persist.settings;
+    const container = document.getElementById('settings-content');
+    container.innerHTML = `
+      <div class="settings-group">
+        <div class="settings-group-title">// Тренировка</div>
+        <div class="setting-row">
+          <div class="setting-label">Подходов на упражнение<small>от 2 до 6</small></div>
+          <div class="setting-control">
+            <button class="setting-btn" data-action="sets-minus" aria-label="Уменьшить">−</button>
+            <span class="setting-value" id="setting-sets">${s.setsCount}</span>
+            <button class="setting-btn" data-action="sets-plus" aria-label="Увеличить">+</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Таймер отдыха (сек)<small>от 30 до 300</small></div>
+          <div class="setting-control">
+            <button class="setting-btn" data-action="rest-minus" aria-label="Уменьшить">−</button>
+            <span class="setting-value" id="setting-rest">${s.restSeconds}</span>
+            <button class="setting-btn" data-action="rest-plus" aria-label="Увеличить">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title">// Опасная зона</div>
+        <div class="setting-row">
+          <div class="setting-label">Удалить все данные<small>Необратимое действие</small></div>
+          <button class="btn btn-ghost" id="btn-clear-all" style="border-color:var(--red-dim);color:var(--red-dim)">Очистить</button>
+        </div>
+      </div>`;
+  },
+
+  /* ══════════════════════════════════════
+     renderCatalog — Каталог упражнений
+     ══════════════════════════════════════
+
+     Собирает все уникальные упражнения из exerciseVariations (дедупликация
+     по полю img), группирует по префиксу slug и рендерит список с
+     миниатюрами 16:9, названием и тегами оборудования.
+  */
+  renderCatalog() {
+    const container = document.getElementById('catalog-content');
+
+    /* Порядок групп и их русские названия */
+    const GROUPS = [
+      { prefix: 'chest',    label: 'Грудь' },
+      { prefix: 'back',     label: 'Спина' },
+      { prefix: 'shoulder', label: 'Плечи' },
+      { prefix: 'delt',     label: 'Дельты' },
+      { prefix: 'trap',     label: 'Трапеция' },
+      { prefix: 'bi',       label: 'Бицепс' },
+      { prefix: 'tri',      label: 'Трицепс' },
+      { prefix: 'legs',     label: 'Ноги' },
+      { prefix: 'calf',     label: 'Икры' },
+    ];
+
+    /* Дедупликация: один img-slug = одна запись */
+    const seen = new Set();
+    const allEx = [];
+    Object.values(exerciseVariations).forEach(variants => {
+      variants.forEach(v => {
+        if (!seen.has(v.img)) {
+          seen.add(v.img);
+          allEx.push(v);
+        }
+      });
+    });
+
+    /* Генерируем HTML по группам */
+    let html = '';
+    GROUPS.forEach(({ prefix, label }) => {
+      const exercises = allEx.filter(v => v.img.startsWith(prefix + '-'));
+      if (!exercises.length) return;
+
+      const items = exercises.map(v => `
+        <div class="catalog-item">
+          <div class="catalog-thumb">
+            <img data-img="${v.img}" alt="${v.name}" data-fallback="exercise">
+          </div>
+          <div class="catalog-info">
+            <div class="catalog-name">${v.name}</div>
+            <div class="catalog-tags">${v.tags.join(' · ')}</div>
+          </div>
+        </div>`).join('');
+
+      html += `<div class="catalog-group">
+        <div class="catalog-group-title">${label}</div>
+        ${items}
+      </div>`;
+    });
+
+    container.innerHTML = html;
+
+    /* Загружаем изображения через ImgLoader */
+    container.querySelectorAll('.catalog-thumb img[data-img]').forEach(img => {
+      ImgLoader.setSrc(img, `assets/img/exercises/${img.dataset.img}.png`, img.alt);
+    });
+  }
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WORKOUT — Логика тренировочного процесса
+   ─────────────────────────────────────────
+   Отвечает за:
+   • Запуск тренировки (start)
+   • Рендер очереди упражнений (render)
+   • Открытие деталей упражнения (openExercise)
+   • Открытие варианта + подходов (openVariation)
+   • Обработка нажатия подхода (tapSet)
+   • Таймер отдыха (startRestTimer / stopRestTimer)
+   • Завершение упражнения (completeExercise)
+   • Откладывание упражнения (cancelExercise / skipExercise)
+   • Финальное завершение дня (finish)
+   • Выход без завершения (goHome)
+   ═══════════════════════════════════════════════════════════════════════════ */
+const Workout = {
+
+  /**
+   * Запускает тренировку для выбранного дня.
+   * Если есть сохранённый прогресс — восстанавливает из persist.
+   * Иначе — создаёт новую очередь из упражнений расписания.
+   *
+   * @param {string} day — тренировочный день ("Д1", "Д2", "Д3", "Д4")
+   */
+  start(day) {
+    const s = App.state;
+    const data = workoutSchedule[day];
+    s.currentDay = day;
+
+    const saved = App.persist.progress[day];
+    if (saved) {
+      /* Восстановление незавершённой тренировки */
+      s.queue = saved.queue;
+      s.totalExercises = saved.totalExercises;
+      s.completedCount = saved.completedCount;
+    } else {
+      /* Новая тренировка: копируем упражнения + skipCount */
+      s.queue = data.exercises.map(e => ({ ...e, skipCount: 0 }));
+      s.totalExercises = data.exercises.length;
+      s.completedCount = 0;
+    }
+
+    document.getElementById('w-day-label').textContent = day + ' · ' + data.name;
+    App.updateBattery();
+    this.render();
+    UI.showScreen('screen-workout');
+  },
+
+  /**
+   * Рендерит список упражнений в очереди.
+   * Если очередь пуста — показывает баннер завершения.
+   */
+  render() {
+    const list = document.getElementById('exercise-list');
+    list.innerHTML = '';
+    const s = App.state;
+
+    if (!s.queue.length) {
+      /* ── Все упражнения выполнены — показываем баннер ── */
+      const _dp1 = App.persist.progress[s.currentDay];
+      const completedEx = (_dp1 && _dp1.completedExercises) || [];
+      const totalVolume = completedEx.reduce((sum, ex) =>
+        sum + ex.sets.reduce((s2, set) => s2 + (set.weight || 0) * (set.reps || 0), 0), 0);
+
+      const b = document.createElement('div');
+      b.className = 'complete-banner visible';
+      b.innerHTML = `
+        <!-- ИЛЛЮСТРАЦИЯ: иконка завершения тренировки -->
+        <div class="illust-wrap illust-md" style="margin:0 auto 16px;width:120px;height:80px;border:none;background:transparent">
+          <img src="assets/img/ui/workout-complete.png"
+               alt="Тренировка завершена"
+               data-fallback="complete">
+        </div>
+        <div class="complete-title">БАТАРЕЯ<br>ЗАРЯЖЕНА</div>
+        <div class="complete-sub">// 100% · все упражнения выполнены</div>
+        ${totalVolume > 0 ? `<div class="complete-stats">Общий объём: <strong>${totalVolume.toLocaleString('ru')} кг</strong></div>` : ''}
+        <button class="btn btn-full btn-big-primary" id="btn-finish-workout">Завершить тренировку</button>`;
+      list.appendChild(b);
+
+      /* Инициализируем fallback для иллюстрации завершения */
+      const cImg = b.querySelector('img[data-fallback]');
+      if (cImg) ImgLoader.setSrc(cImg, cImg.src, 'Тренировка завершена');
+      return;
+    }
+
+    /* ── Рендер очереди упражнений ── */
+    s.queue.forEach((ex, i) => {
+      const item = document.createElement('div');
+      item.className = 'exercise-item';
+      item.innerHTML = `
+        <div class="exercise-meta">
+          <span class="exercise-index">${String(i + 1).padStart(2, '0')}.</span>
+          <span class="exercise-type-badge">${ex.type}</span>
+          <span class="exercise-muscle">${ex.muscle}</span>
+        </div>
+        <div class="exercise-movement">${ex.movement}${ex.skipCount > 0 ? `<span class="skip-tag">отложено ×${ex.skipCount}</span>` : ''}</div>
+        <div class="exercise-actions">
+          <button class="btn btn-primary" data-action="open-exercise" data-index="${i}">→ Начать</button>
+          <button class="btn btn-ghost" data-action="skip-exercise" data-index="${i}">⇣ Отложить</button>
+        </div>`;
+      list.appendChild(item);
+    });
+  },
+
+  /**
+   * Открывает экран деталей упражнения (screen-exercise).
+   * Заполняет заголовки, бэйджи и список вариантов.
+   * Обновляет иллюстрацию мышечной группы.
+   *
+   * @param {number} index — индекс упражнения в queue
+   */
+  openExercise(index) {
+    const s = App.state;
+    const ex = s.queue[index];
+    s.currentExercise = index;
+
+    /* Формируем ключ для exerciseVariations: "Д1-1", "Д2-3", ... */
+    const varKey = s.currentDay + '-' + ex.id;
+    const vars = exerciseVariations[varKey] || [];
+
+    /* Заполняем UI-элементы */
+    document.getElementById('ex-header-label').textContent = s.currentDay + ' · #' + String(ex.id).padStart(2, '0');
+    document.getElementById('det-type').textContent = ex.type.toUpperCase();
+    document.getElementById('det-index').textContent = '#' + String(ex.id).padStart(2, '0');
+    document.getElementById('det-movement').textContent = ex.movement;
+    document.getElementById('det-muscle').textContent = ex.muscle;
+
+    /* ── Обновляем иллюстрацию мышечной группы ── */
+    const muscleKey = ImgLoader.getMuscleKey(ex.muscle);
+    const muscleImg = document.querySelector('#illust-muscle img');
+    if (muscleImg) {
+      ImgLoader.setSrc(muscleImg, `assets/img/muscles/${muscleKey}.png`, ex.muscle);
+    }
+
+    /* ── Рендерим список вариантов ── */
+    const varsEl = document.getElementById('det-variations');
+    if (vars.length) {
+      varsEl.innerHTML = vars.map((v, i) => `
+        <div class="variation-card" data-action="open-variation" data-varkey="${varKey}" data-varidx="${i}" role="button" tabindex="0" aria-label="${v.name}">
+          <span class="var-arrow">›</span>
+          <div class="variation-card-header">
+            <span class="var-num">${String(i + 1).padStart(2, '0')}</span>
+            <span class="var-name">${v.name}</span>
+          </div>
+          <div class="var-equipment-row">${v.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+        </div>`).join('');
+    } else {
+      varsEl.innerHTML = '<div style="color:var(--text-dim);font-size:11px">—</div>';
+    }
+    UI.showScreen('screen-exercise');
+  },
+
+  /**
+   * Открывает экран варианта (screen-variation).
+   * Заполняет данные варианта, инициализирует подходы,
+   * подтягивает данные из прошлой сессии.
+   *
+   * @param {string} varKey — ключ вариантов ("Д1-1")
+   * @param {number} varIdx — индекс выбранного варианта (0–6)
+   */
+  openVariation(varKey, varIdx) {
+    const s = App.state;
+    const v = exerciseVariations[varKey][varIdx];
+    const ex = s.queue[s.currentExercise];
+    s.currentVarKey = varKey;
+    s.currentVarIdx = varIdx;
+
+    const setsCount = App.persist.settings.setsCount;
+
+    /* ── Проверяем незавершённый прогресс для этого варианта ──
+       Если пользователь вернулся назад, не закончив подходы,
+       восстанавливаем состояние из App.persist.progress[day].inProgress */
+    const ip = (App.persist.progress[s.currentDay] || {}).inProgress;
+    const hasPartial = ip && ip.varKey === varKey && ip.varIdx === varIdx && ip.setsCompleted > 0;
+
+    if (hasPartial) {
+      /* Восстанавливаем данные незавершённой сессии */
+      s.setsCompleted = ip.setsCompleted;
+      s.setData = ip.setData.map(d => ({...d}));
+    } else {
+      s.setsCompleted = 0;
+      /* Инициализируем массив данных подходов нулями */
+      s.setData = Array.from({ length: setsCount }, () => ({ weight: 0, reps: 0 }));
+      /* ── Авто-заполнение из прошлой сессии ──
+         Ищем последнюю тренировку того же дня в истории.
+         Если нашли — копируем weight/reps из соответствующего упражнения. */
+      const lastSession = App.persist.history.slice().reverse().find(h => h.day === s.currentDay);
+      if (lastSession) {
+        const lastEx = lastSession.exercises.find(e => e.id === ex.id);
+        if (lastEx && lastEx.sets) {
+          lastEx.sets.forEach((set, i) => {
+            if (i < s.setData.length) {
+              s.setData[i] = { weight: set.weight || 0, reps: set.reps || 0 };
+            }
+          });
+        }
+      }
+    }
+
+    /* Заполняем UI-элементы */
+    document.getElementById('vd-header-label').textContent = s.currentDay + ' · #' + String(ex.id).padStart(2, '0');
+    document.getElementById('vd-type-chip').textContent = ex.type.toUpperCase();
+    document.getElementById('vd-id-chip').textContent = '#' + String(ex.id).padStart(2, '0');
+    document.getElementById('vd-title').textContent = v.name;
+    document.getElementById('vd-muscle').textContent = ex.muscle;
+    document.getElementById('vd-desc').textContent = v.desc || '—';
+    document.getElementById('vd-equip').innerHTML = v.tags.map(t => `<span class="vd-equip-tag">${t}</span>`).join('');
+
+    /* ── Обновляем иллюстрацию техники ── */
+    /* Имя файла берётся из поля img варианта упражнения.
+       Формат: {muscle}-{movement}-{equipment}.png
+       Пример: chest-flat-barbell.png, legs-squat-back.png */
+    const exImg = document.querySelector('#illust-exercise img');
+    if (exImg) {
+      ImgLoader.setSrc(exImg, `assets/img/exercises/${v.img}.png`, v.name);
+    }
+
+    /* ── Рендерим кнопки подходов ── */
+    const setsRow = document.getElementById('sets-row');
+    setsRow.innerHTML = '';
+    for (let i = 0; i < setsCount; i++) {
+      setsRow.innerHTML += `
+        <button class="set-btn" id="set-${i}" data-action="tap-set" data-set="${i}" aria-label="Подход ${i + 1}">
+          <span class="set-bolt">⚡</span><span class="set-num">Подход ${i + 1}</span>
+        </button>`;
+    }
+
+    /* ── Восстанавливаем визуальный статус выполненных подходов ── */
+    if (hasPartial) {
+      ip.doneSets.forEach(i => {
+        const b = document.getElementById('set-' + i);
+        if (b) b.classList.add('done');
+      });
+    }
+
+    /* ── Рендерим поля ввода веса/повторений ──
+       Показываем данные следующего невыполненного подхода */
+    const nextSetIdx = hasPartial ? Math.min(s.setsCompleted, setsCount - 1) : 0;
+    const inputsEl = document.getElementById('set-inputs');
+    inputsEl.innerHTML = `
+      <div class="set-input-group">
+        <label for="input-weight">Вес (кг)</label>
+        <input class="set-input" type="number" id="input-weight" inputmode="decimal" step="0.5" min="0" placeholder="0" value="${s.setData[nextSetIdx].weight || ''}">
+      </div>
+      <div class="set-input-group">
+        <label for="input-reps">Повторения</label>
+        <input class="set-input" type="number" id="input-reps" inputmode="numeric" min="0" placeholder="0" value="${s.setData[nextSetIdx].reps || ''}">
+      </div>`;
+
+    const hintEl = document.getElementById('sets-hint');
+    if (hasPartial) {
+      const remaining = setsCount - s.setsCompleted;
+      hintEl.textContent = `Подход ${s.setsCompleted} ✓ — осталось ${remaining}`;
+    } else {
+      hintEl.textContent = `Выполни все ${setsCount} подхода`;
+    }
+    UI.showScreen('screen-variation');
+  },
+
+  /**
+   * Обрабатывает нажатие на кнопку подхода.
+   * 1. Считывает вес/повторения из input'ов
+   * 2. Сохраняет в setData
+   * 3. Помечает кнопку как .done
+   * 4. Если есть ещё подходы — запускает таймер отдыха
+   * 5. Если все подходы — автозавершение через 750ms
+   *
+   * @param {number} setIdx — индекс подхода (0, 1, 2, ...)
+   */
+  tapSet(setIdx) {
+    const s = App.state;
+    const btn = document.getElementById('set-' + setIdx);
+    if (btn.classList.contains('done')) return;  /* Уже выполнен — игнорируем */
+
+    /* Считываем текущие значения из полей ввода */
+    const weight = parseFloat(document.getElementById('input-weight').value) || 0;
+    const reps = parseInt(document.getElementById('input-reps').value) || 0;
+    s.setData[setIdx] = { weight, reps };
+
+    btn.classList.add('done');
+    s.setsCompleted++;
+    UI.haptic();
+
+    const setsCount = App.persist.settings.setsCount;
+    const remaining = setsCount - s.setsCompleted;
+    const hint = document.getElementById('sets-hint');
+
+    if (remaining > 0) {
+      /* Сохраняем промежуточный прогресс: пользователь может вернуться назад
+         и прогресс должен восстановиться при повторном открытии варианта */
+      const day = s.currentDay;
+      if (!App.persist.progress[day]) App.persist.progress[day] = {};
+      App.persist.progress[day].inProgress = {
+        varKey: s.currentVarKey,
+        varIdx: s.currentVarIdx,
+        setsCompleted: s.setsCompleted,
+        setData: s.setData.map(d => ({...d})),
+        doneSets: Array.from({length: setsCount}, (_, i) => i).filter(i => {
+          const b = document.getElementById('set-' + i);
+          return b && b.classList.contains('done');
+        })
+      };
+      App.save();
+
+      hint.textContent = `Подход ${s.setsCompleted} ✓ — осталось ${remaining}`;
+      /* Подставляем значения следующего подхода (или текущие) */
+      if (setIdx + 1 < setsCount) {
+        const nextWeight = s.setData[setIdx + 1].weight || weight;
+        const nextReps = s.setData[setIdx + 1].reps || reps;
+        document.getElementById('input-weight').value = nextWeight || '';
+        document.getElementById('input-reps').value = nextReps || '';
+      }
+      /* Запускаем таймер отдыха */
+      this.startRestTimer();
+    } else {
+      hint.textContent = 'Все подходы выполнены ⚡';
+      /* Автозавершение через 750ms */
+      setTimeout(() => this.completeExercise(), 750);
+    }
+  },
+
+  /* ════════════════════════════════════
+     REST TIMER — Таймер отдыха
+     ════════════════════════════════════ */
+
+  /**
+   * Запускает таймер отдыха между подходами.
+   * Показывает оверлей с SVG-кольцом и обратным отсчётом.
+   * По истечении — скрывает оверлей + haptic.
+   */
+  startRestTimer() {
+    const seconds = App.persist.settings.restSeconds;
+    const overlay = document.getElementById('rest-timer');
+    const textEl = document.getElementById('timer-text');
+    const ringEl = document.getElementById('timer-ring-fg');
+    const circumference = 2 * Math.PI * 70;  /* r=70, C = 2πr ≈ 439.82 */
+
+    overlay.classList.add('visible');
+    let remaining = seconds;
+    textEl.textContent = remaining;
+    ringEl.style.strokeDasharray = circumference;
+    ringEl.style.strokeDashoffset = '0';
+
+    /* Очищаем предыдущий таймер (если был) */
+    clearInterval(App.restTimerId);
+
+    /* Обратный отсчёт: каждую секунду уменьшаем remaining */
+    App.restTimerId = setInterval(() => {
+      remaining--;
+      textEl.textContent = remaining;
+      /* offset = circumference × (пройденная доля) */
+      const offset = circumference * (1 - remaining / seconds);
+      ringEl.style.strokeDashoffset = offset;
+
+      if (remaining <= 0) {
+        this.stopRestTimer();
+        UI.haptic(30);  /* Длинная вибрация по окончании */
+      }
+    }, 1000);
+  },
+
+  /**
+   * Останавливает таймер отдыха (ручной пропуск или окончание).
+   */
+  stopRestTimer() {
+    clearInterval(App.restTimerId);
+    document.getElementById('rest-timer').classList.remove('visible');
+  },
+
+  /* ════════════════════════════════════
+     Завершение и откладывание
+     ════════════════════════════════════ */
+
+  /**
+   * Завершает текущее упражнение:
+   * 1. Удаляет из очереди (queue)
+   * 2. Инкрементирует completedCount
+   * 3. Сохраняет данные подходов в progress.completedExercises
+   * 4. Обновляет батарею
+   * 5. Возвращает на screen-workout
+   */
+  completeExercise() {
+    const s = App.state;
+    const ex = s.queue.splice(s.currentExercise, 1)[0];
+    s.completedCount++;
+
+    /* Создаём запись progress для дня, если ещё нет */
+    if (!App.persist.progress[s.currentDay]) {
+      App.persist.progress[s.currentDay] = {
+        completedCount: s.completedCount,
+        totalExercises: s.totalExercises,
+        queue: s.queue,
+        completedExercises: []
+      };
+    }
+    const prog = App.persist.progress[s.currentDay];
+    prog.completedCount = s.completedCount;
+    prog.queue = s.queue;
+    if (!prog.completedExercises) prog.completedExercises = [];
+    /* Сохраняем данные завершённого упражнения */
+    prog.completedExercises.push({
+      id: ex.id,
+      movement: ex.movement,
+      muscle: ex.muscle,
+      type: ex.type,
+      sets: [...s.setData]  /* Копия массива данных подходов */
+    });
+    /* Очищаем промежуточный прогресс — упражнение полностью завершено */
+    delete prog.inProgress;
+    App.save();
+
+    App.updateBattery();
+    this.render();
+    UI.showScreen('screen-workout');
+    UI.haptic(20);
+  },
+
+  /**
+   * Откладывает упражнение (с экрана деталей).
+   * Перемещает в конец очереди + увеличивает skipCount.
+   */
+  cancelExercise() {
+    const s = App.state;
+    const ex = s.queue.splice(s.currentExercise, 1)[0];
+    ex.skipCount = (ex.skipCount || 0) + 1;
+    s.queue.push(ex);
+    this.render();
+    UI.showScreen('screen-workout');
+  },
+
+  /**
+   * Откладывает упражнение (из списка тренировки).
+   * Аналогично cancelExercise, но по индексу из списка.
+   * @param {number} index — индекс в queue
+   */
+  skipExercise(index) {
+    const s = App.state;
+    const ex = s.queue.splice(index, 1)[0];
+    ex.skipCount = (ex.skipCount || 0) + 1;
+    s.queue.push(ex);
+    this.render();
+  },
+
+  /**
+   * Финальное завершение тренировки дня.
+   * 1. Помечает день как done
+   * 2. Формирует запись в history (дата, упражнения, объём)
+   * 3. Ограничивает history 100 записями
+   * 4. Очищает progress
+   * 5. Возвращает на главный экран
+   */
+  finish() {
+    const s = App.state;
+    App.persist.doneDays[s.currentDay] = true;
+
+    /* Формируем запись истории */
+    const prog = App.persist.progress[s.currentDay];
+    const completedExercises = (prog && prog.completedExercises) || [];
+    const totalVolume = completedExercises.reduce((sum, ex) =>
+      sum + ex.sets.reduce((s2, set) => s2 + (set.weight || 0) * (set.reps || 0), 0), 0);
+
+    App.persist.history.push({
+      date: new Date().toISOString(),
+      day: s.currentDay,
+      name: workoutSchedule[s.currentDay].name,
+      exercises: completedExercises,
+      totalVolume
+    });
+
+    /* Ограничение: хранить не более 100 записей */
+    if (App.persist.history.length > 100) {
+      App.persist.history = App.persist.history.slice(-100);
+    }
+
+    App.clearProgress(s.currentDay);
+    App.save();
+    UI.renderHome();
+    UI.showScreen('screen-home');
+    UI.toast('Тренировка завершена! ⚡');
+  },
+
+  /**
+   * Выход с экрана тренировки на главную.
+   * Сохраняет текущий прогресс для возобновления.
+   */
+  goHome() {
+    App.saveProgress();
+    UI.renderHome();
+    UI.showScreen('screen-home');
+  }
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EVENT DELEGATION — Делегирование событий
+   ─────────────────────────────────────────
+   Вместо inline onclick (onclick="func()") используется
+   единый обработчик на #app. Все кликабельные элементы
+   используют атрибут data-action для идентификации действия.
+
+   Преимущества:
+   • Один обработчик вместо десятков
+   • Работает для динамически созданных элементов
+   • Нет глобальных функций
+   • Легко добавлять новые действия
+
+   Паттерн:
+   <button data-action="open-exercise" data-index="2">
+   → switch(action) → Workout.openExercise(2)
+   ═══════════════════════════════════════════════════════════════════════════ */
+document.getElementById('app').addEventListener('click', (e) => {
+  /* Ищем ближайший элемент с data-action (всплытие) */
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const action = target.dataset.action;
+
+  switch (action) {
+    /* ── Тренировка: открыть/отложить упражнение ── */
+    case 'open-exercise':
+      Workout.openExercise(parseInt(target.dataset.index));
+      break;
+    case 'skip-exercise':
+      Workout.skipExercise(parseInt(target.dataset.index));
+      break;
+
+    /* ── Открыть вариант ── */
+    case 'open-variation':
+      Workout.openVariation(target.dataset.varkey, parseInt(target.dataset.varidx));
+      break;
+
+    /* ── Нажатие на подход ── */
+    case 'tap-set':
+      Workout.tapSet(parseInt(target.dataset.set));
+      break;
+
+    /* ── Настройки: подходы ± ── */
+    case 'sets-minus': {
+      const s = App.persist.settings;
+      if (s.setsCount > 2) { s.setsCount--; App.save(); document.getElementById('setting-sets').textContent = s.setsCount; }
+      break;
+    }
+    case 'sets-plus': {
+      const s = App.persist.settings;
+      if (s.setsCount < 6) { s.setsCount++; App.save(); document.getElementById('setting-sets').textContent = s.setsCount; }
+      break;
+    }
+
+    /* ── Настройки: таймер отдыха ± (шаг 15 сек) ── */
+    case 'rest-minus': {
+      const s = App.persist.settings;
+      if (s.restSeconds > 30) { s.restSeconds -= 15; App.save(); document.getElementById('setting-rest').textContent = s.restSeconds; }
+      break;
+    }
+    case 'rest-plus': {
+      const s = App.persist.settings;
+      if (s.restSeconds < 300) { s.restSeconds += 15; App.save(); document.getElementById('setting-rest').textContent = s.restSeconds; }
+      break;
+    }
+  }
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAMED BUTTON LISTENERS — Обработчики кнопок с фиксированными ID
+   ────────────────────────────────────────────────────────────────
+   Кнопки, которые всегда присутствуют в DOM (не создаются динамически).
+   Для них используем прямой addEventListener по id.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Кнопка «Выйти» из тренировки → сохранить прогресс и вернуться */
+document.getElementById('btn-go-home').addEventListener('click', () => Workout.goHome());
+
+/* Кнопка «Назад» на экране деталей → отложить и вернуться к списку */
+document.getElementById('btn-cancel-exercise').addEventListener('click', () => Workout.cancelExercise());
+
+/* Кнопка «Выполнено» на экране деталей → завершить без выбора варианта */
+document.getElementById('btn-complete-exercise').addEventListener('click', () => Workout.completeExercise());
+
+/* Кнопка «Отложить — тренажёр занят» → в конец очереди */
+document.getElementById('btn-postpone-exercise').addEventListener('click', () => Workout.cancelExercise());
+
+/* Кнопка «Назад» с экрана варианта → вернуться к списку вариантов */
+document.getElementById('btn-close-variation').addEventListener('click', () => UI.showScreen('screen-exercise'));
+
+/* Кнопка «Вернуться к вариантам» (нижняя) */
+document.getElementById('btn-back-to-variants').addEventListener('click', () => UI.showScreen('screen-exercise'));
+
+/* Кнопка «Пропустить» таймер отдыха */
+document.getElementById('btn-skip-timer').addEventListener('click', () => Workout.stopRestTimer());
+
+/* Навигация: Статистика */
+document.getElementById('btn-stats').addEventListener('click', () => { UI.renderStats(); UI.showScreen('screen-stats'); });
+document.getElementById('btn-stats-back').addEventListener('click', () => { UI.renderHome(); UI.showScreen('screen-home'); });
+
+/* Навигация: Настройки */
+document.getElementById('btn-settings').addEventListener('click', () => { UI.renderSettings(); UI.showScreen('screen-settings'); });
+document.getElementById('btn-settings-back').addEventListener('click', () => { UI.renderHome(); UI.showScreen('screen-home'); });
+
+/* Навигация: Каталог упражнений */
+document.getElementById('btn-catalog').addEventListener('click', () => { UI.renderCatalog(); UI.showScreen('screen-catalog'); });
+document.getElementById('btn-catalog-back').addEventListener('click', () => UI.showScreen('screen-home'));
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DYNAMIC BUTTON HANDLERS — Обработчики динамических кнопок
+   ────────────────────────────────────────────────────────
+   Кнопки, которые создаются в innerHTML (не существуют при загрузке).
+   Для них используем делегирование на document (не #app, т.к. dialog
+   и toast вне #app).
+   ═══════════════════════════════════════════════════════════════════════════ */
+document.addEventListener('click', (e) => {
+  /* Завершить тренировку (кнопка в complete-banner) */
+  if (e.target.id === 'btn-finish-workout') {
+    Workout.finish();
+    return;
+  }
+  /* Сброс недели (кнопка в week-bar) */
+  if (e.target.id === 'btn-reset-week') {
+    UI.confirm('Сброс недели', 'Прогресс текущей недели будет обнулён. Продолжить?').then(ok => {
+      if (ok) App.resetWeek();
+    });
+    return;
+  }
+  /* Экспорт данных */
+  if (e.target.id === 'btn-export') {
+    App.exportData();
+    return;
+  }
+  /* Импорт данных */
+  if (e.target.id === 'btn-import') {
+    App.importData();
+    return;
+  }
+  /* Очистить все данные */
+  if (e.target.id === 'btn-clear-all') {
+    UI.confirm('Удалить все данные?', 'Вся история тренировок и настройки будут безвозвратно удалены.').then(ok => {
+      if (ok) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      }
+    });
+    return;
+  }
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   МИГРАЦИЯ ДАННЫХ — переименование ключей дней
+   ─────────────────────────────────────────────
+   Переводит старые ключи (ПН/ВТ/ЧТ/ПТ) в нейтральные (Д1/Д2/Д3/Д4).
+   Вызывается один раз после App.load() — безопасно при повторных запусках.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function migrateOldDayKeys() {
+  const keyMap = { "ПН":"Д1", "ВТ":"Д2", "ЧТ":"Д3", "ПТ":"Д4" };
+  let changed = false;
+
+  /* Migrate doneDays */
+  const dd = App.persist.doneDays;
+  if (dd) {
+    Object.keys(keyMap).forEach(old => {
+      if (old in dd) {
+        dd[keyMap[old]] = dd[old];
+        delete dd[old];
+        changed = true;
+      }
+    });
+  }
+
+  /* Migrate progress */
+  const prog = App.persist.progress;
+  if (prog) {
+    Object.keys(keyMap).forEach(old => {
+      if (old in prog) {
+        prog[keyMap[old]] = prog[old];
+        delete prog[old];
+        changed = true;
+      }
+    });
+  }
+
+  if (changed) App.save();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+   ────────────────────────
+   Порядок запуска:
+   1. ImgLoader.init()        — навешивает fallback на все img[data-fallback]
+   2. App.load()              — загружает данные из localStorage + проверяет неделю
+   3. migrateOldDayKeys()     — однократная миграция ключей ПН→Д1 и т.д.
+   4. UI.renderHome()         — рендерит главный экран
+   ═══════════════════════════════════════════════════════════════════════════ */
+ImgLoader.init();
+App.load();
+migrateOldDayKeys();
+UI.renderHome();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DEBUG PANEL — панель отладки на устройстве
+   ───────────────────────────────────────────
+   Чтобы скрыть: закомментировать весь блок от этой строки до END DEBUG
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function() {
+  var entries = [];
+  var panelVisible = false;
+
+  /* ── Создаём DOM ── */
+  var wrap = document.createElement('div');
+  wrap.id = 'dbg-wrap';
+  wrap.style.cssText = [
+    'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:99999',
+    'font-family:monospace', 'font-size:10px', 'pointer-events:none'
+  ].join(';');
+
+  var toggleBtn = document.createElement('button');
+  toggleBtn.id = 'dbg-toggle';
+  toggleBtn.style.cssText = [
+    'position:absolute', 'bottom:4px', 'right:4px',
+    'background:#1a1a00', 'color:#ffff00', 'border:1px solid #ffff00',
+    'border-radius:4px', 'padding:4px 8px', 'font-size:10px',
+    'font-family:monospace', 'pointer-events:auto', 'z-index:100000',
+    'opacity:0.85', 'cursor:pointer'
+  ].join(';');
+  toggleBtn.textContent = '🐛 0';
+
+  var panel = document.createElement('div');
+  panel.id = 'dbg-panel';
+  panel.style.cssText = [
+    'display:none', 'background:rgba(0,0,0,0.95)', 'border-top:1px solid #ffff00',
+    'padding:6px', 'max-height:55vh', 'overflow-y:auto',
+    'pointer-events:auto'
+  ].join(';');
+
+  var logDiv = document.createElement('div');
+  logDiv.id = 'dbg-log';
+  logDiv.style.cssText = 'color:#fff; line-height:1.5; word-break:break-all;';
+
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex; gap:6px; margin-top:6px;';
+
+  var copyBtn = document.createElement('button');
+  copyBtn.textContent = '📋 Копировать';
+  copyBtn.style.cssText = 'flex:1; background:#222; color:#fff; border:1px solid #555; border-radius:4px; padding:5px; font-size:10px; cursor:pointer;';
+  copyBtn.onclick = function() {
+    var text = entries.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() { copyBtn.textContent = '✅ Скопировано'; setTimeout(function(){ copyBtn.textContent = '📋 Копировать'; }, 2000); });
+    } else {
+      /* Fallback для старых Android */
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      copyBtn.textContent = '✅ OK'; setTimeout(function(){ copyBtn.textContent = '📋 Копировать'; }, 2000);
+    }
+  };
+
+  var clearBtn = document.createElement('button');
+  clearBtn.textContent = '🗑 Очистить';
+  clearBtn.style.cssText = 'background:#222; color:#888; border:1px solid #444; border-radius:4px; padding:5px; font-size:10px; cursor:pointer;';
+  clearBtn.onclick = function() { entries = []; logDiv.innerHTML = ''; toggleBtn.textContent = '🐛 0'; };
+
+  btnRow.appendChild(copyBtn);
+  btnRow.appendChild(clearBtn);
+  panel.appendChild(logDiv);
+  panel.appendChild(btnRow);
+  wrap.appendChild(panel);
+  wrap.appendChild(toggleBtn);
+  document.body.appendChild(wrap);
+
+  /* ── Функция добавления записи ── */
+  function log(level, msg) {
+    var ts = new Date().toISOString().substr(11, 8);
+    var colors = { ERR:'#ff4444', WARN:'#ffaa00', INFO:'#88ff88', IMG:'#ff8844' };
+    var color = colors[level] || '#ccc';
+    var line = '<span style="color:#888">' + ts + '</span> '
+             + '<span style="color:' + color + '">[' + level + ']</span> '
+             + '<span style="color:#eee">' + escHtml(msg) + '</span>';
+    entries.push(ts + ' [' + level + '] ' + msg);
+    logDiv.insertAdjacentHTML('beforeend', '<div>' + line + '</div>');
+    logDiv.scrollTop = logDiv.scrollHeight;
+    toggleBtn.textContent = '🐛 ' + entries.length;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── Переключение панели ── */
+  toggleBtn.onclick = function() {
+    panelVisible = !panelVisible;
+    panel.style.display = panelVisible ? 'block' : 'none';
+    wrap.style.bottom = panelVisible ? '0' : '0';
+  };
+
+  /* ── Перехват ошибок изображений (capture phase — раньше onerror) ── */
+  window.addEventListener('error', function(e) {
+    if (e.target && e.target.tagName === 'IMG') {
+      log('IMG', 'FAIL: ' + (e.target.src || '?') + (e.target.dataset && e.target.dataset.img ? ' [data-img=' + e.target.dataset.img + ']' : ''));
+    }
+  }, true);
+
+  /* ── Перехват JS-ошибок ── */
+  window.onerror = function(msg, src, line, col) {
+    log('ERR', msg + ' @ ' + src + ':' + line + ':' + col);
+    return false;
+  };
+
+  /* ── Стартовая системная информация ── */
+  log('INFO', 'URL: ' + location.href);
+  log('INFO', 'UA: ' + navigator.userAgent.substr(0, 120));
+  log('INFO', 'Protocol: ' + location.protocol);
+  log('INFO', 'Pathname: ' + location.pathname);
+
+  /* ── Если открыт через content://, показываем кнопку с file:// ссылкой ── */
+  if (location.protocol === 'content:') {
+    /* Извлекаем реальный путь из content:// URI вида:
+       content://com.asus.filemanager.OpenFileProvider/file/storage/emulated/0/...  */
+    var rawPath = location.pathname; /* /file/storage/emulated/0/... */
+    /* Убираем префикс /file (специфика ASUS provider) */
+    var filePath = rawPath.replace(/^\/file/, '');
+    var fileUrl = 'file://' + filePath;
+
+    log('WARN', '⚠ Открыт через content:// — соседние файлы заблокированы браузером!');
+    log('INFO', 'Правильная ссылка: ' + fileUrl);
+
+    /* Добавляем кнопку "Открыть через file://" */
+    var openBtn = document.createElement('a');
+    openBtn.href = fileUrl;
+    openBtn.textContent = '🔗 Открыть через file://';
+    openBtn.style.cssText = [
+      'display:block', 'margin-top:6px', 'padding:7px',
+      'background:#003300', 'color:#88ff88', 'border:1px solid #88ff88',
+      'border-radius:4px', 'text-align:center', 'text-decoration:none',
+      'font-size:10px', 'word-break:break-all'
+    ].join(';');
+    /* Добавляем инструкцию */
+    var hint = document.createElement('div');
+    hint.style.cssText = 'color:#aaa; font-size:9px; margin-top:4px; line-height:1.4;';
+    hint.textContent = 'Скопируй адрес выше и вставь в адресную строку Chrome — или нажми кнопку (может не сработать из-за ограничений Android)';
+    panel.appendChild(openBtn);
+    panel.appendChild(hint);
+  }
+
+})();
+/* ═══════════════════════════ END DEBUG ═══════════════════════════════════ */
+</script>
+</body>
+</html>

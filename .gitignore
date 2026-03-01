@@ -1,0 +1,9 @@
+# Claude Code internal files
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
