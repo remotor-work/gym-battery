@@ -3,6 +3,7 @@
 **A smart workout tracker built for real gyms — where nothing ever goes as planned.**
 
 🔗 **[Live App →](https://remotor-work.github.io/gym-battery/)**
+[![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
 
 ---
 
@@ -45,6 +46,22 @@ Pure frontend. No framework, no backend, no build step.
 1. Open [remotor-work.github.io/gym-battery](https://remotor-work.github.io/gym-battery/) in Chrome
 2. Tap the menu (⋮) → **"Add to Home screen"**
 3. Done — the app opens in its own window, no browser UI
+
+## Why Open Source
+
+I built this because I felt the pain firsthand. Training in a crowded city gym, I kept running into the same wall — rigid programs that assumed every piece of equipment would always be free. I looked for apps that handled this gracefully and couldn't find one that did it well.
+
+So I built it myself. And since the problem is universal — anyone who trains in a busy gym deals with this — it felt wrong to keep it private. If this helps someone train smarter instead of standing in line, that's enough reason to share it.
+
+Use it, fork it, adapt it to your own program structure. No restrictions.
+
+## Contributing
+
+Pull requests are welcome. If you want to add exercises, improve the UI, translate the interface, or adapt the workout structure — go ahead.
+
+## License
+
+[MIT](LICENSE) — free to use, modify, and distribute.
 
 ---
 
