@@ -1687,14 +1687,16 @@ const ImgLoader = {
   /**
    * Генерирует SVG-заглушку в виде data:URI строки.
    * Заглушка — нейтральная гантель на тёмном фоне, адаптированная
-   * под цветовую палитру приложения.
+   * под цветовую палитру приложения. При разработке показывает
+   * ожидаемое имя файла для помощи с отладкой.
    *
    * @param {number} w — ширина SVG (px)
    * @param {number} h — высота SVG (px)
    * @param {string} label — текст-подпись под иконкой
+   * @param {string} [filename] — ожидаемое имя файла для разработки
    * @returns {string} — data:image/svg+xml;charset=utf-8,... URI
    */
-  placeholder(w = 200, h = 120, label = 'Иллюстрация') {
+  placeholder(w = 200, h = 120, label = 'Иллюстрация', filename = '') {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
       <rect width="${w}" height="${h}" rx="6" fill="#1d1d20"/>
       <g transform="translate(${w/2}, ${h/2 - 8})" fill="none" stroke="#3a3a42" stroke-width="2" stroke-linecap="round">
@@ -1712,6 +1714,9 @@ const ImgLoader = {
       <text x="${w/2}" y="${h/2 + 22}" text-anchor="middle"
             font-family="'Exo 2',sans-serif" font-size="9" fill="#505060"
             letter-spacing="0.12em">${label}</text>
+      ${filename ? `<text x="${w/2}" y="${h - 6}" text-anchor="middle"
+            font-family="'Courier New',monospace" font-size="7" fill="#404050"
+            opacity="0.7">${filename}</text>` : ''}
     </svg>`;
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   },
@@ -1736,7 +1741,7 @@ const ImgLoader = {
 
   /**
    * Устанавливает src для <img> с автоматическим fallback.
-   * При ошибке загрузки — подставляет SVG-заглушку.
+   * При ошибке загрузки — подставляет SVG-заглушку с ожидаемым именем файла.
    *
    * @param {HTMLImageElement} img — элемент <img>
    * @param {string} src — путь к файлу изображения
@@ -1748,7 +1753,9 @@ const ImgLoader = {
       /* Файл не найден — подставляем заглушку */
       const w = (img.parentElement && img.parentElement.offsetWidth) || 200;
       const h = (img.parentElement && img.parentElement.offsetHeight) || 120;
-      img.src = this.placeholder(w, h, label || img.alt || 'Изображение');
+      /* Извлекаем имя файла из src для разработки */
+      const filename = src.split('/').pop();
+      img.src = this.placeholder(w, h, label || img.alt || 'Изображение', filename);
       img.classList.add('loaded');
       img.onerror = null;  /* Предотвращаем рекурсию */
     };
