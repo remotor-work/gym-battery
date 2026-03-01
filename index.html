@@ -1193,16 +1193,21 @@ html, body {
   width: 100%; height: 202px; /* 16:9 при ширине 360px — fallback для Chrome < 88 */
   margin-bottom: 16px;
 }
-/* Крупная иллюстрация (детали вариации, 16:9) */
+/* Крупная иллюстрация (детали вариации, 3:2) */
 .illust-wrap.illust-lg {
-  width: 100%; height: 202px; /* 16:9 при ширине 360px — fallback для Chrome < 88 */
+  width: 100%; height: 240px; /* 3:2 при ширине 360px — fallback для Chrome < 88 */
   margin-bottom: 20px;
 }
 @supports (aspect-ratio: 16/9) {
-  .illust-wrap.illust-md,
-  .illust-wrap.illust-lg {
+  .illust-wrap.illust-md {
     height: auto;
     aspect-ratio: 16/9;
+  }
+}
+@supports (aspect-ratio: 3/2) {
+  .illust-wrap.illust-lg {
+    height: auto;
+    aspect-ratio: 3/2;
   }
 }
 /* Изображение внутри обёртки */
@@ -1237,15 +1242,15 @@ html, body {
 }
 .catalog-item:active { background: var(--bg2); }
 
-/* Миниатюра 16:9 */
+/* Миниатюра 3:2 */
 .catalog-thumb {
-  width: 96px; height: 54px; /* 96 × 9/16 — fallback для Chrome < 88 */
+  width: 96px; height: 64px; /* 96 × 2/3 — fallback для Chrome < 88 */
   border-radius: var(--r2); overflow: hidden;
   flex-shrink: 0; background: var(--bg2);
   border: 1px solid var(--border);
 }
-@supports (aspect-ratio: 16/9) {
-  .catalog-thumb { height: auto; aspect-ratio: 16/9; }
+@supports (aspect-ratio: 3/2) {
+  .catalog-thumb { height: auto; aspect-ratio: 3/2; }
 }
 .catalog-thumb img {
   width: 100%; height: 100%;
