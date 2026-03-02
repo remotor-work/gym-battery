@@ -855,9 +855,29 @@ html, body {
 .detail-muscle-line {
   font-family: var(--exo); font-size: 11px; font-weight: 400;
   color: var(--led); opacity: 0.72; letter-spacing: 0.16em;
-  text-transform: uppercase; margin-bottom: 20px;
+  text-transform: uppercase; margin-bottom: 10px;
 }
+
+/* Строка приоритета: звёзды + пояснение (detail-экраны) */
+.detail-priority-row {
+  display: flex; align-items: center; gap: 9px;
+  margin-bottom: 18px;
+}
+.priority-stars {
+  font-size: 13px; color: var(--led); letter-spacing: 2px; flex-shrink: 0;
+}
+.priority-label {
+  font-family: var(--exo); font-size: 10px; font-weight: 400;
+  color: var(--text-dim); letter-spacing: 0.06em;
+}
+
 .detail-divider { height: 1px; background: var(--border); margin-bottom: 18px; border-radius: 1px; }
+
+/* Звёзды в строке каталога */
+.catalog-item-stars {
+  font-size: 10px; color: var(--led); letter-spacing: 1.5px;
+  margin-bottom: 3px;
+}
 .detail-section-label {
   font-family: var(--orb); font-size: 7px; letter-spacing: 0.28em;
   color: var(--text-dim); text-transform: uppercase; margin-bottom: 11px;
@@ -1532,6 +1552,7 @@ html, body {
       </div>
       <div class="detail-main-title" id="vd-title">Название</div>
       <div class="detail-muscle-line" id="vd-muscle">Мышца</div>
+      <div class="detail-priority-row" id="vd-priority"><!-- звёзды + пояснение --></div>
       <div class="detail-divider"></div>
       <div class="detail-section-label">// Оборудование</div>
       <div class="vd-equip-row" id="vd-equip"></div>
@@ -1666,6 +1687,7 @@ html, body {
       </div>
       <div class="detail-main-title" id="cd-title">Название</div>
       <div class="detail-muscle-line" id="cd-muscle">Мышца</div>
+      <div class="detail-priority-row" id="cd-priority"><!-- звёзды + пояснение --></div>
       <div class="detail-divider"></div>
       <div class="detail-section-label">// Снаряд</div>
       <div class="vd-equip-row" id="cd-equip"></div>
@@ -2867,14 +2889,15 @@ const UI = {
       { prefix: 'calf',     label: 'Икры' },
     ];
 
-    /* Дедупликация: один img-slug = одна запись */
+    /* Дедупликация: один img-slug = одна запись.
+       Сохраняем индекс варианта (_idx) для расчёта приоритета. */
     const seen = new Set();
     const allEx = [];
     Object.values(exerciseVariations).forEach(variants => {
-      variants.forEach(v => {
+      variants.forEach((v, i) => {
         if (!seen.has(v.img)) {
           seen.add(v.img);
-          allEx.push(v);
+          allEx.push({ ...v, _idx: i });
         }
       });
     });
@@ -2885,16 +2908,20 @@ const UI = {
       const exercises = allEx.filter(v => v.img.startsWith(prefix + '-'));
       if (!exercises.length) return;
 
-      const items = exercises.map(v => `
+      const items = exercises.map(v => {
+        const stars = varPriority(v._idx);
+        return `
         <div class="catalog-item" data-action="open-catalog-detail" data-img="${v.img}">
           <div class="catalog-thumb">
             <img data-img="${v.img}" alt="${v.name}" data-fallback="exercise">
           </div>
           <div class="catalog-info">
             <div class="catalog-name">${v.name}</div>
+            <div class="catalog-item-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</div>
             <div class="catalog-tags">${v.tags.join(' · ')}</div>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
 
       html += `<div class="catalog-group">
         <div class="catalog-group-title">${label}</div>
@@ -2912,12 +2939,12 @@ const UI = {
 
   /* ── Открыть детальную карточку упражнения из каталога ── */
   openCatalogDetail(imgSlug) {
-    /* 1. Найти вариант по img-slug */
-    var variant = null, varKey = null;
+    /* 1. Найти вариант по img-slug (сохраняем индекс для приоритета) */
+    var variant = null, varKey = null, varIdx = 0;
     for (var key in exerciseVariations) {
       var vars = exerciseVariations[key];
       for (var i = 0; i < vars.length; i++) {
-        if (vars[i].img === imgSlug) { variant = vars[i]; varKey = key; break; }
+        if (vars[i].img === imgSlug) { variant = vars[i]; varKey = key; varIdx = i; break; }
       }
       if (variant) break;
     }
@@ -2935,6 +2962,7 @@ const UI = {
     document.getElementById('cd-muscle-chip').textContent = ex ? ex.muscle : '—';
     document.getElementById('cd-title').textContent = variant.name;
     document.getElementById('cd-muscle').textContent = ex ? ex.muscle : '';
+    document.getElementById('cd-priority').innerHTML = varPriorityHTML(varIdx);
     document.getElementById('cd-equip').innerHTML =
       variant.tags.map(function(t) { return '<span class="vd-equip-tag">' + t + '</span>'; }).join('');
     document.getElementById('cd-muscles').textContent = variant.muscles || '—';
@@ -2974,6 +3002,21 @@ function varPriority(varIdx) {
   if (varIdx <= 3) return 4;
   if (varIdx <= 5) return 3;
   return 2;
+}
+
+/* Описание уровня приоритета (для детальных экранов) */
+const PRIORITY_LABEL = {
+  5: 'Классическое оборудование — высший приоритет',
+  4: 'Гантели или тросовый блок',
+  3: 'Тренажёр или TRX',
+  2: 'Минимальное снаряжение',
+};
+
+/* Возвращает HTML строку со звёздами и пояснением (для detail-экранов) */
+function varPriorityHTML(varIdx) {
+  const n = varPriority(varIdx);
+  return `<span class="priority-stars">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`
+    + `<span class="priority-label">${PRIORITY_LABEL[n] || ''}</span>`;
 }
 
 const Workout = {
@@ -3259,6 +3302,7 @@ const Workout = {
     document.getElementById('vd-id-chip').textContent = slotId ? '#' + String(slotId).padStart(2, '0') : '';
     document.getElementById('vd-title').textContent = v.name;
     document.getElementById('vd-muscle').textContent = slotMuscle;
+    document.getElementById('vd-priority').innerHTML = varPriorityHTML(varIdx);
     document.getElementById('vd-desc').textContent = v.desc || '—';
     document.getElementById('vd-equip').innerHTML = v.tags.map(t => `<span class="vd-equip-tag">${t}</span>`).join('');
 
