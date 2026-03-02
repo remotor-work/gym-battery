@@ -644,6 +644,79 @@ html, body {
 .exercise-actions { display: flex; gap: 8px; padding-left: 30px; margin-top: 2px; }
 
 /* ══════════════════════════════════════════════════════════════════
+   THREE-ZONE WORKOUT LAYOUT
+   ──────────────────────────
+   Три зоны экрана тренировки:
+   • ДЕЛАЙ СЕЙЧАС — .now-card
+   • ПРОВЕРЬ      — .check-card
+   • ВЫПОЛНЕНО    — .done-row
+   ══════════════════════════════════════════════════════════════════ */
+#screen-workout .scroll-body { padding: 14px 16px; }
+.workout-zone { margin-bottom: 22px; }
+
+.zone-label {
+  font-family: var(--exo); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.15em; color: var(--led);
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.zone-label-dim { color: var(--text-dim); }
+
+/* ДЕЛАЙ СЕЙЧАС */
+.now-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 13px 14px 11px;
+  margin-bottom: 10px;
+  animation: slideIn 0.2s ease;
+}
+.now-card-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 6px;
+}
+.now-stars {
+  font-size: 11px; color: var(--led); letter-spacing: 1px;
+}
+.now-movement {
+  font-family: var(--exo); font-size: 14px; font-weight: 700;
+  color: var(--white); margin-bottom: 3px; line-height: 1.3;
+}
+.now-variant-name {
+  font-family: var(--exo); font-size: 11px; color: var(--text-dim);
+  margin-bottom: 7px; line-height: 1.35;
+}
+.now-actions { display: flex; gap: 8px; margin-top: 10px; }
+.now-actions .btn { flex: 1; }
+
+/* ПРОВЕРЬ */
+.check-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 14px 10px;
+  margin-bottom: 8px;
+  opacity: 0.72;
+}
+.check-card-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+.check-busy-label {
+  font-family: var(--exo); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase;
+}
+
+/* ВЫПОЛНЕНО */
+.done-row {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.done-check { color: var(--led); font-weight: 700; font-size: 13px; }
+.done-movement { color: var(--text-secondary); font-family: var(--exo); }
+.done-variant-name { font-size: 10px; color: var(--text-dim); }
+
+/* ══════════════════════════════════════════════════════════════════
    COMPLETE BANNER — Баннер завершения тренировки
    ──────────────────────────────────────────────
    Появляется когда все упражнения выполнены (queue пуст).
@@ -1611,6 +1684,86 @@ html, body {
 </div>
 
 <script>
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  GYM BATTERY — УЧЕБНЫЙ КОММЕНТАРИЙ ДЛЯ СТУДЕНТОВ
+ *  Это одностраничное PWA-приложение без фреймворков и сборщиков.
+ *  Весь код — HTML, CSS и JS — находится в одном файле: index.html.
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  АРХИТЕКТУРА ПРИЛОЖЕНИЯ
+ *  ─────────────────────
+ *  Три объекта-синглтона + одна утилита:
+ *    App      — состояние, сохранение в localStorage, недельный цикл
+ *    UI       — рендеринг экранов, тосты, диалоги, haptic-обратная связь
+ *    Workout  — полная логика тренировки (слоты, зоны, подходы, таймер)
+ *    ImgLoader — загрузка изображений с SVG-заглушкой при ошибке
+ *
+ *  НАВИГАЦИЯ (без роутера)
+ *  ───────────────────────
+ *  Функция UI.showScreen(id) показывает нужный <div class="screen">
+ *  и скрывает все остальные через CSS-класс .active.
+ *  Никаких URL-переходов — чистый DOM.
+ *
+ *  ДАННЫЕ
+ *  ──────
+ *  workoutSchedule     — расписание (4 дня, 6 упражнений/день)
+ *  exerciseVariations  — 168 вариантов упражнений (7 на каждое)
+ *  Ключ вариантов: "{ДЕНЬ}-{НОМЕР}" → массив {img, name, tags, muscles, desc}
+ *
+ *  СОСТОЯНИЕ (два уровня)
+ *  ──────────────────────
+ *  App.state    — runtime, сбрасывается при перезагрузке
+ *  App.persist  — localStorage (ключ: gb_v3):
+ *    persist.progress[day] — текущая незавершённая тренировка
+ *    persist.history[]     — история всех завершённых тренировок
+ *    persist.settings      — настройки (количество подходов, таймер)
+ *    persist.doneDays      — выполненные дни текущей недели
+ *
+ *  FLOW ТРЕНИРОВКИ (три зоны)
+ *  ──────────────────────────
+ *  1. Пользователь выбирает день на HOME → Workout.start(day)
+ *  2. buildSlots(day) создаёт 6 слотов (по одному на упражнение)
+ *     Слот = { id, type, muscle, movement, varQueue[], busy[], done, doneVarIdx }
+ *  3. render() рисует три зоны на screen-workout:
+ *
+ *     ┌─ ДЕЛАЙ СЕЙЧАС ────────────────────────────────────────────┐
+ *     │  Один лучший вариант на слот (varQueue[0]).               │
+ *     │  Кнопки: → Начать  |  ⊘ Занято                           │
+ *     └───────────────────────────────────────────────────────────┘
+ *     ┌─ ПРОВЕРЬ — может освободилось ────────────────────────────┐
+ *     │  Варианты, отмеченные "Занято" (slot.busy[]).             │
+ *     │  Кнопки: → Освободилось  |  ✕ Пропустить                 │
+ *     └───────────────────────────────────────────────────────────┘
+ *     ┌─ ВЫПОЛНЕНО ✓ ─────────────────────────────────────────────┐
+ *     │  Завершённые слоты (slot.done === true). Справочно.       │
+ *     └───────────────────────────────────────────────────────────┘
+ *
+ *  4. "Занято"       → markSlotBusy()    — вариант уходит в ПРОВЕРЬ,
+ *                                          следующий по приоритету в ДЕЛАЙ
+ *  5. "Начать"       → slot-start        → openVariation() → screen-variation
+ *  6. "Выполнено"    → completeExercise() — слот закрыт (done=true)
+ *  7. "Освободилось" → reclaimBusyVariant() — возврат в ДЕЛАЙ + openVariation()
+ *  8. Все слоты done → баннер "БАТАРЕЯ ЗАРЯЖЕНА" → finish()
+ *
+ *  ПРИОРИТЕТ ВАРИАНТОВ
+ *  ────────────────────
+ *  Позиция в массиве = качество оборудования/удобство:
+ *    varPriority(0) = varPriority(1) = ★★★★★  (штанга, силовая рама)
+ *    varPriority(2) = varPriority(3) = ★★★★   (гантели, тросовый блок)
+ *    varPriority(4) = varPriority(5) = ★★★    (машина, TRX)
+ *    varPriority(6)                  = ★★     (альтернатива с весом тела)
+ *
+ *  СОБЫТИЯ (делегирование)
+ *  ───────────────────────
+ *  Один обработчик click на #app → target.closest('[data-action]')
+ *  switch(action) обрабатывает: slot-start, slot-busy, check-start,
+ *    check-dismiss, open-variation, open-exercise, tap-set и др.
+ *  Кнопки с фиксированными id используют прямой addEventListener.
+ *
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ╔═══════════════════════════════════════════════════════════════════════╗
    ║                     JAVASCRIPT — LOGIC LAYER                        ║
@@ -1619,7 +1772,7 @@ html, body {
    ║  ─────────────────────────────────                                  ║
    ║  1. App     — состояние, localStorage, управление неделей           ║
    ║  2. UI      — рендеринг экранов, тосты, диалоги, haptic             ║
-   ║  3. Workout — логика тренировки (старт, подходы, таймер, finish)    ║
+   ║  3. Workout — логика тренировки (слоты, зоны, подходы, таймер)      ║
    ║                                                                     ║
    ║  Плюс утилита:                                                      ║
    ║  4. ImgLoader — загрузка иллюстраций с fallback на SVG-заглушку     ║
@@ -2148,12 +2301,10 @@ const App = {
    */
   state: {
     currentDay: null,
-    queue: [],
-    totalExercises: 0,
-    completedCount: 0,
-    currentExercise: null,
-    currentVarKey: null,
-    currentVarIdx: null,
+    slots: [],              // [{id,type,muscle,movement,varQueue,busy,done,doneVarIdx}]
+    currentSlotIdx: null,   // индекс слота, который сейчас выполняется
+    currentVarKey: null,    // "Д1-2" и т.п.
+    currentVarIdx: null,    // индекс варианта внутри exerciseVariations[varKey]
     setsCompleted: 0,
     setData: [],
   },
@@ -2225,14 +2376,12 @@ const App = {
    */
   saveProgress() {
     const s = this.state;
-    if (!s.currentDay) return;
-    /* Если тренировка полностью завершена — не сохраняем прогресс */
-    if (s.queue.length === 0 && s.completedCount === s.totalExercises) return;
-    this.persist.progress[s.currentDay] = {
-      completedCount: s.completedCount,
-      totalExercises: s.totalExercises,
-      queue: s.queue
-    };
+    if (!s.currentDay || !s.slots.length) return;
+    /* Если тренировка полностью завершена — не сохраняем промежуточный прогресс */
+    if (s.slots.every(sl => sl.done)) return;
+    const existing = this.persist.progress[s.currentDay] || {};
+    existing.slots = s.slots;
+    this.persist.progress[s.currentDay] = existing;
     this.save();
   },
 
@@ -2306,12 +2455,15 @@ const App = {
 
   /**
    * Вычисляет процент заряда батареи (0–100).
-   * Формула: (completedCount / totalExercises) × 100.
+   * Формула: (выполненные слоты / всего слотов) × 100.
    * @returns {number} — процент (целое число)
    */
   getBatteryPct() {
     const s = this.state;
-    return s.totalExercises ? Math.round(s.completedCount / s.totalExercises * 100) : 0;
+    const total = s.slots.length;
+    if (!total) return 0;
+    const done = s.slots.filter(sl => sl.done).length;
+    return Math.round(done / total * 100);
   },
 
   /**
@@ -2785,135 +2937,217 @@ const UI = {
    WORKOUT — Логика тренировочного процесса
    ─────────────────────────────────────────
    Отвечает за:
+   • Построение слотов (buildSlots)
    • Запуск тренировки (start)
-   • Рендер очереди упражнений (render)
-   • Открытие деталей упражнения (openExercise)
+   • Рендер трёх зон (render): ДЕЛАЙ СЕЙЧАС / ПРОВЕРЬ / ВЫПОЛНЕНО
+   • Пометка слота занятым (markSlotBusy)
+   • Возврат освободившегося варианта (reclaimBusyVariant)
+   • Отклонение занятого варианта (dismissBusyVariant)
    • Открытие варианта + подходов (openVariation)
    • Обработка нажатия подхода (tapSet)
    • Таймер отдыха (startRestTimer / stopRestTimer)
    • Завершение упражнения (completeExercise)
-   • Откладывание упражнения (cancelExercise / skipExercise)
    • Финальное завершение дня (finish)
    • Выход без завершения (goHome)
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Приоритет варианта по его позиции в массиве (0 = лучший) */
+function varPriority(varIdx) {
+  if (varIdx <= 1) return 5;
+  if (varIdx <= 3) return 4;
+  if (varIdx <= 5) return 3;
+  return 2;
+}
+
 const Workout = {
 
   /**
+   * Строит массив слотов для тренировочного дня.
+   * Каждый слот — одно упражнение с очередью вариантов по приоритету.
+   *
+   * @param {string} day — тренировочный день ("Д1", "Д2", "Д3", "Д4")
+   * @returns {Array} — массив слотов
+   */
+  buildSlots(day) {
+    return workoutSchedule[day].exercises.map(ex => {
+      const varKey = day + '-' + ex.id;
+      const vars = exerciseVariations[varKey] || [];
+      return {
+        id: ex.id, type: ex.type, muscle: ex.muscle, movement: ex.movement,
+        varQueue: vars.map((_, i) => i), // [0,1,2,...] — порядок по приоритету
+        busy: [],           // [{idx}] — варианты, отмеченные "занято" → зона ПРОВЕРЬ
+        done: false,        // слот выполнен
+        doneVarIdx: null,   // какой вариант был выбран
+      };
+    });
+  },
+
+  /**
    * Запускает тренировку для выбранного дня.
-   * Если есть сохранённый прогресс — восстанавливает из persist.
-   * Иначе — создаёт новую очередь из упражнений расписания.
+   * Если есть сохранённые слоты — восстанавливает из persist.
+   * Иначе — строит новые слоты через buildSlots().
    *
    * @param {string} day — тренировочный день ("Д1", "Д2", "Д3", "Д4")
    */
   start(day) {
     const s = App.state;
-    const data = workoutSchedule[day];
     s.currentDay = day;
-
+    s.currentSlotIdx = null;
     const saved = App.persist.progress[day];
-    if (saved) {
-      /* Восстановление незавершённой тренировки */
-      s.queue = saved.queue;
-      s.totalExercises = saved.totalExercises;
-      s.completedCount = saved.completedCount;
-    } else {
-      /* Новая тренировка: копируем упражнения + skipCount */
-      s.queue = data.exercises.map(e => ({ ...e, skipCount: 0 }));
-      s.totalExercises = data.exercises.length;
-      s.completedCount = 0;
-    }
-
-    document.getElementById('w-day-label').textContent = day + ' · ' + data.name;
+    s.slots = (saved && saved.slots) ? saved.slots : this.buildSlots(day);
+    document.getElementById('w-day-label').textContent = day + ' · ' + workoutSchedule[day].name;
     App.updateBattery();
     this.render();
     UI.showScreen('screen-workout');
   },
 
   /**
-   * Рендерит список упражнений в очереди.
-   * Если очередь пуста — показывает баннер завершения.
+   * Рендерит три зоны тренировки:
+   *   ДЕЛАЙ СЕЙЧАС — лучший доступный вариант для каждого незавершённого слота
+   *   ПРОВЕРЬ      — варианты, отмеченные "занято" (можно вернуть)
+   *   ВЫПОЛНЕНО    — завершённые слоты (справочно)
+   * Если все слоты выполнены — показывает баннер завершения тренировки.
    */
   render() {
     const list = document.getElementById('exercise-list');
     list.innerHTML = '';
     const s = App.state;
+    if (!s.slots.length) return;
 
-    if (!s.queue.length) {
-      /* ── Все упражнения выполнены — показываем баннер ── */
-      const _dp1 = App.persist.progress[s.currentDay];
-      const completedEx = (_dp1 && _dp1.completedExercises) || [];
-      const totalVolume = completedEx.reduce((sum, ex) =>
+    const pendingSlots = s.slots.filter(sl => !sl.done && sl.varQueue.length > 0);
+    const busyItems = s.slots.filter(sl => !sl.done).flatMap(sl =>
+      sl.busy.map(b => ({ slot: sl, varIdx: b.idx }))
+    );
+    const doneSlots = s.slots.filter(sl => sl.done);
+
+    /* ── Баннер завершения тренировки ── */
+    if (pendingSlots.length === 0 && busyItems.length === 0) {
+      const completedExercises = (App.persist.progress[s.currentDay] || {}).completedExercises || [];
+      const totalVolume = completedExercises.reduce((sum, ex) =>
         sum + ex.sets.reduce((s2, set) => s2 + (set.weight || 0) * (set.reps || 0), 0), 0);
-
       const b = document.createElement('div');
       b.className = 'complete-banner visible';
       b.innerHTML = `
-        <!-- ИЛЛЮСТРАЦИЯ: иконка завершения тренировки (SVG с анимацией) -->
-        <object data="assets/img/ui/workout-complete.svg"
-                type="image/svg+xml"
-                width="88" height="143"
-                aria-label="Тренировка завершена"
-                style="display:block;margin:0 auto 20px;overflow:visible">
-        </object>
+        <object data="assets/img/ui/workout-complete.svg" type="image/svg+xml"
+                width="88" height="143" aria-label="Тренировка завершена"
+                style="display:block;margin:0 auto 20px;overflow:visible"></object>
         <div class="complete-title">БАТАРЕЯ<br>ЗАРЯЖЕНА</div>
         <div class="complete-sub">// 100% · все упражнения выполнены</div>
         ${totalVolume > 0 ? `<div class="complete-stats">Общий объём: <strong>${totalVolume.toLocaleString('ru')} кг</strong></div>` : ''}
         <button class="btn btn-full btn-big-primary" id="btn-finish-workout">Завершить тренировку</button>`;
       list.appendChild(b);
-
-      /* Инициализируем fallback для иллюстрации завершения */
-      const cImg = b.querySelector('img[data-fallback]');
-      if (cImg) ImgLoader.setSrc(cImg, cImg.src, 'Тренировка завершена');
       return;
     }
 
-    /* ── Рендер очереди упражнений ── */
-    s.queue.forEach((ex, i) => {
-      const item = document.createElement('div');
-      item.className = 'exercise-item';
-      item.innerHTML = `
-        <div class="exercise-meta">
-          <span class="exercise-index">${String(i + 1).padStart(2, '0')}.</span>
-          <span class="exercise-type-badge">${ex.type}</span>
-          <span class="exercise-muscle">${ex.muscle}</span>
-        </div>
-        <div class="exercise-movement">${ex.movement}${ex.skipCount > 0 ? `<span class="skip-tag">отложено ×${ex.skipCount}</span>` : ''}</div>
-        <div class="exercise-actions">
-          <button class="btn btn-primary" data-action="open-exercise" data-index="${i}">→ Начать</button>
-          <button class="btn btn-ghost" data-action="skip-exercise" data-index="${i}">⇣ Отложить</button>
-        </div>`;
-      list.appendChild(item);
-    });
+    /* ── Зона 1: ДЕЛАЙ СЕЙЧАС ── */
+    if (pendingSlots.length > 0) {
+      const z1 = document.createElement('div');
+      z1.className = 'workout-zone';
+      z1.innerHTML = '<div class="zone-label">// Делай сейчас</div>';
+      pendingSlots.forEach(sl => {
+        const slotIdx = s.slots.indexOf(sl);
+        const varKey = s.currentDay + '-' + sl.id;
+        const topVarIdx = sl.varQueue[0];
+        const variant = (exerciseVariations[varKey] || [])[topVarIdx];
+        if (!variant) return;
+        const stars = varPriority(topVarIdx);
+        const card = document.createElement('div');
+        card.className = 'now-card';
+        card.innerHTML = `
+          <div class="now-card-header">
+            <span class="exercise-type-badge">${sl.type}</span>
+            <span class="now-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>
+          </div>
+          <div class="now-movement">${sl.movement}</div>
+          <div class="now-variant-name">${variant.name}</div>
+          <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+          <div class="now-actions">
+            <button class="btn btn-primary" data-action="slot-start" data-slot="${slotIdx}" data-varidx="${topVarIdx}">→ Начать</button>
+            <button class="btn btn-ghost" data-action="slot-busy" data-slot="${slotIdx}">⊘ Занято</button>
+          </div>`;
+        z1.appendChild(card);
+      });
+      list.appendChild(z1);
+    }
+
+    /* ── Зона 2: ПРОВЕРЬ ── */
+    if (busyItems.length > 0) {
+      const z2 = document.createElement('div');
+      z2.className = 'workout-zone workout-zone-check';
+      z2.innerHTML = '<div class="zone-label zone-label-dim">// Проверь — может освободилось</div>';
+      busyItems.forEach(({ slot, varIdx }) => {
+        const slotIdx = s.slots.indexOf(slot);
+        const varKey = s.currentDay + '-' + slot.id;
+        const variant = (exerciseVariations[varKey] || [])[varIdx];
+        if (!variant) return;
+        const card = document.createElement('div');
+        card.className = 'check-card';
+        card.innerHTML = `
+          <div class="check-card-header">
+            <span class="exercise-type-badge">${slot.type}</span>
+            <span class="check-busy-label">занято</span>
+          </div>
+          <div class="now-movement">${slot.movement}</div>
+          <div class="now-variant-name">${variant.name}</div>
+          <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+          <div class="now-actions">
+            <button class="btn btn-primary" data-action="check-start" data-slot="${slotIdx}" data-varidx="${varIdx}">→ Освободилось</button>
+            <button class="btn btn-ghost" data-action="check-dismiss" data-slot="${slotIdx}" data-varidx="${varIdx}">✕ Пропустить</button>
+          </div>`;
+        z2.appendChild(card);
+      });
+      list.appendChild(z2);
+    }
+
+    /* ── Зона 3: ВЫПОЛНЕНО ── */
+    if (doneSlots.length > 0) {
+      const z3 = document.createElement('div');
+      z3.className = 'workout-zone workout-zone-done';
+      z3.innerHTML = '<div class="zone-label zone-label-dim">// Выполнено ✓</div>';
+      doneSlots.forEach(sl => {
+        const varKey = s.currentDay + '-' + sl.id;
+        const variant = sl.doneVarIdx !== null
+          ? (exerciseVariations[varKey] || [])[sl.doneVarIdx] : null;
+        const row = document.createElement('div');
+        row.className = 'done-row';
+        row.innerHTML = `<span class="done-check">✓</span>
+          <span class="done-movement">${sl.movement}</span>
+          ${variant ? `<span class="done-variant-name"> — ${variant.name}</span>` : ''}`;
+        z3.appendChild(row);
+      });
+      list.appendChild(z3);
+    }
   },
 
   /**
-   * Открывает экран деталей упражнения (screen-exercise).
+   * Открывает экран деталей упражнения (screen-exercise) — дополнительный обзор.
+   * В основном флоу не используется: слот запускается напрямую через slot-start.
    * Заполняет заголовки, бэйджи и список вариантов.
-   * Обновляет иллюстрацию мышечной группы.
    *
-   * @param {number} index — индекс упражнения в queue
+   * @param {number} slotIdx — индекс слота в App.state.slots
    */
-  openExercise(index) {
+  openExercise(slotIdx) {
     const s = App.state;
-    const ex = s.queue[index];
-    s.currentExercise = index;
+    const slot = s.slots[slotIdx];
+    if (!slot) return;
+    s.currentSlotIdx = slotIdx;
 
     /* Формируем ключ для exerciseVariations: "Д1-1", "Д2-3", ... */
-    const varKey = s.currentDay + '-' + ex.id;
+    const varKey = s.currentDay + '-' + slot.id;
     const vars = exerciseVariations[varKey] || [];
 
     /* Заполняем UI-элементы */
-    document.getElementById('ex-header-label').textContent = s.currentDay + ' · #' + String(ex.id).padStart(2, '0');
-    document.getElementById('det-type').textContent = ex.type.toUpperCase();
-    document.getElementById('det-index').textContent = '#' + String(ex.id).padStart(2, '0');
-    document.getElementById('det-movement').textContent = ex.movement;
-    document.getElementById('det-muscle').textContent = ex.muscle;
+    document.getElementById('ex-header-label').textContent = s.currentDay + ' · #' + String(slot.id).padStart(2, '0');
+    document.getElementById('det-type').textContent = slot.type.toUpperCase();
+    document.getElementById('det-index').textContent = '#' + String(slot.id).padStart(2, '0');
+    document.getElementById('det-movement').textContent = slot.movement;
+    document.getElementById('det-muscle').textContent = slot.muscle;
 
     /* ── Обновляем иллюстрацию мышечной группы ── */
-    const muscleKey = ImgLoader.getMuscleKey(ex.muscle);
+    const muscleKey = ImgLoader.getMuscleKey(slot.muscle);
     const muscleImg = document.querySelector('#illust-muscle img');
     if (muscleImg) {
-      ImgLoader.setSrc(muscleImg, `assets/img/muscles/${muscleKey}.png`, ex.muscle);
+      ImgLoader.setSrc(muscleImg, `assets/img/muscles/${muscleKey}.png`, slot.muscle);
     }
 
     /* ── Рендерим список вариантов ── */
@@ -2945,7 +3179,7 @@ const Workout = {
   openVariation(varKey, varIdx) {
     const s = App.state;
     const v = exerciseVariations[varKey][varIdx];
-    const ex = s.queue[s.currentExercise];
+    const slot = s.currentSlotIdx !== null ? s.slots[s.currentSlotIdx] : null;
     s.currentVarKey = varKey;
     s.currentVarIdx = varIdx;
 
@@ -2969,8 +3203,8 @@ const Workout = {
          Ищем последнюю тренировку того же дня в истории.
          Если нашли — копируем weight/reps из соответствующего упражнения. */
       const lastSession = App.persist.history.slice().reverse().find(h => h.day === s.currentDay);
-      if (lastSession) {
-        const lastEx = lastSession.exercises.find(e => e.id === ex.id);
+      if (lastSession && slot) {
+        const lastEx = lastSession.exercises.find(e => e.id === slot.id);
         if (lastEx && lastEx.sets) {
           lastEx.sets.forEach((set, i) => {
             if (i < s.setData.length) {
@@ -2982,11 +3216,14 @@ const Workout = {
     }
 
     /* Заполняем UI-элементы */
-    document.getElementById('vd-header-label').textContent = s.currentDay + ' · #' + String(ex.id).padStart(2, '0');
-    document.getElementById('vd-type-chip').textContent = ex.type.toUpperCase();
-    document.getElementById('vd-id-chip').textContent = '#' + String(ex.id).padStart(2, '0');
+    const slotId = slot ? slot.id : '';
+    const slotType = slot ? slot.type : '';
+    const slotMuscle = slot ? slot.muscle : '';
+    document.getElementById('vd-header-label').textContent = s.currentDay + (slotId ? ' · #' + String(slotId).padStart(2, '0') : '');
+    document.getElementById('vd-type-chip').textContent = slotType.toUpperCase();
+    document.getElementById('vd-id-chip').textContent = slotId ? '#' + String(slotId).padStart(2, '0') : '';
     document.getElementById('vd-title').textContent = v.name;
-    document.getElementById('vd-muscle').textContent = ex.muscle;
+    document.getElementById('vd-muscle').textContent = slotMuscle;
     document.getElementById('vd-desc').textContent = v.desc || '—';
     document.getElementById('vd-equip').innerHTML = v.tags.map(t => `<span class="vd-equip-tag">${t}</span>`).join('');
 
@@ -3152,41 +3389,81 @@ const Workout = {
   },
 
   /* ════════════════════════════════════
-     Завершение и откладывание
+     Слот-действия: занято / завершено
      ════════════════════════════════════ */
 
   /**
-   * Завершает текущее упражнение:
-   * 1. Удаляет из очереди (queue)
-   * 2. Инкрементирует completedCount
-   * 3. Сохраняет данные подходов в progress.completedExercises
-   * 4. Обновляет батарею
-   * 5. Возвращает на screen-workout
+   * Отмечает тренажёр как "занято":
+   * Убирает текущий топ-вариант слота из очереди → в зону ПРОВЕРЬ.
+   * Следующий вариант по приоритету автоматически становится активным.
+   * @param {number} slotIdx — индекс слота
+   */
+  markSlotBusy(slotIdx) {
+    const slot = App.state.slots[slotIdx];
+    if (!slot || slot.varQueue.length === 0) return;
+    const busyVarIdx = slot.varQueue.shift(); // снимаем топ-приоритетный вариант
+    slot.busy.push({ idx: busyVarIdx });
+    App.saveProgress();
+    this.render();
+    UI.haptic(10);
+  },
+
+  /**
+   * Возвращает освободившийся вариант из зоны ПРОВЕРЬ в ДЕЛАЙ СЕЙЧАС
+   * и сразу открывает экран выполнения.
+   * @param {number} slotIdx — индекс слота
+   * @param {number} varIdx — индекс варианта, который освободился
+   */
+  reclaimBusyVariant(slotIdx, varIdx) {
+    const s = App.state;
+    const slot = s.slots[slotIdx];
+    slot.busy = slot.busy.filter(b => b.idx !== varIdx);
+    slot.varQueue.unshift(varIdx); // возвращаем вперёд очереди
+    s.currentSlotIdx = slotIdx;
+    App.saveProgress();
+    this.openVariation(s.currentDay + '-' + slot.id, varIdx);
+  },
+
+  /**
+   * Окончательно пропускает занятый вариант (убирает из ПРОВЕРЬ без возврата).
+   * @param {number} slotIdx — индекс слота
+   * @param {number} varIdx — индекс варианта, который пропускаем
+   */
+  dismissBusyVariant(slotIdx, varIdx) {
+    const slot = App.state.slots[slotIdx];
+    slot.busy = slot.busy.filter(b => b.idx !== varIdx);
+    // не возвращаем в varQueue — вариант навсегда пропущен на сегодня
+    App.saveProgress();
+    this.render();
+  },
+
+  /**
+   * Завершает текущий слот упражнения:
+   * 1. Помечает слот done = true
+   * 2. Записывает данные подходов в progress.completedExercises
+   * 3. Обновляет батарею
+   * 4. Возвращает на screen-workout
    */
   completeExercise() {
     const s = App.state;
-    const ex = s.queue.splice(s.currentExercise, 1)[0];
-    s.completedCount++;
+    const slot = s.slots[s.currentSlotIdx];
+    if (!slot) return;
+    slot.done = true;
+    slot.doneVarIdx = s.currentVarIdx;
+    slot.busy = []; // снимаем все "занято" для этого слота
 
-    /* Создаём запись progress для дня, если ещё нет */
     if (!App.persist.progress[s.currentDay]) {
-      App.persist.progress[s.currentDay] = {
-        completedCount: s.completedCount,
-        totalExercises: s.totalExercises,
-        queue: s.queue,
-        completedExercises: []
-      };
+      App.persist.progress[s.currentDay] = { completedExercises: [] };
     }
     const prog = App.persist.progress[s.currentDay];
-    prog.completedCount = s.completedCount;
-    prog.queue = s.queue;
+    prog.slots = s.slots;
     if (!prog.completedExercises) prog.completedExercises = [];
     /* Сохраняем данные завершённого упражнения */
     prog.completedExercises.push({
-      id: ex.id,
-      movement: ex.movement,
-      muscle: ex.muscle,
-      type: ex.type,
+      id: slot.id,
+      movement: slot.movement,
+      muscle: slot.muscle,
+      type: slot.type,
       sets: [...s.setData]  /* Копия массива данных подходов */
     });
     /* Очищаем промежуточный прогресс — упражнение полностью завершено */
@@ -3197,32 +3474,6 @@ const Workout = {
     this.render();
     UI.showScreen('screen-workout');
     UI.haptic(20);
-  },
-
-  /**
-   * Откладывает упражнение (с экрана деталей).
-   * Перемещает в конец очереди + увеличивает skipCount.
-   */
-  cancelExercise() {
-    const s = App.state;
-    const ex = s.queue.splice(s.currentExercise, 1)[0];
-    ex.skipCount = (ex.skipCount || 0) + 1;
-    s.queue.push(ex);
-    this.render();
-    UI.showScreen('screen-workout');
-  },
-
-  /**
-   * Откладывает упражнение (из списка тренировки).
-   * Аналогично cancelExercise, но по индексу из списка.
-   * @param {number} index — индекс в queue
-   */
-  skipExercise(index) {
-    const s = App.state;
-    const ex = s.queue.splice(index, 1)[0];
-    ex.skipCount = (ex.skipCount || 0) + 1;
-    s.queue.push(ex);
-    this.render();
   },
 
   /**
@@ -3299,15 +3550,31 @@ document.getElementById('app').addEventListener('click', (e) => {
   const action = target.dataset.action;
 
   switch (action) {
-    /* ── Тренировка: открыть/отложить упражнение ── */
+    /* ── Тренировка: обзор слота (дополнительный экран) ── */
     case 'open-exercise':
       Workout.openExercise(parseInt(target.dataset.index));
       break;
-    case 'skip-exercise':
-      Workout.skipExercise(parseInt(target.dataset.index));
+
+    /* ── Три зоны: запуск / занято / вернуть / пропустить ── */
+    case 'slot-start': {
+      const slotIdx = parseInt(target.dataset.slot);
+      const varIdx = parseInt(target.dataset.varidx);
+      App.state.currentSlotIdx = slotIdx;
+      const slot = App.state.slots[slotIdx];
+      Workout.openVariation(App.state.currentDay + '-' + slot.id, varIdx);
+      break;
+    }
+    case 'slot-busy':
+      Workout.markSlotBusy(parseInt(target.dataset.slot));
+      break;
+    case 'check-start':
+      Workout.reclaimBusyVariant(parseInt(target.dataset.slot), parseInt(target.dataset.varidx));
+      break;
+    case 'check-dismiss':
+      Workout.dismissBusyVariant(parseInt(target.dataset.slot), parseInt(target.dataset.varidx));
       break;
 
-    /* ── Открыть вариант ── */
+    /* ── Открыть вариант (из экрана обзора) ── */
     case 'open-variation':
       Workout.openVariation(target.dataset.varkey, parseInt(target.dataset.varidx));
       break;
@@ -3359,20 +3626,20 @@ document.getElementById('app').addEventListener('click', (e) => {
 /* Кнопка «Выйти» из тренировки → сохранить прогресс и вернуться */
 document.getElementById('btn-go-home').addEventListener('click', () => Workout.goHome());
 
-/* Кнопка «Назад» на экране деталей → отложить и вернуться к списку */
-document.getElementById('btn-cancel-exercise').addEventListener('click', () => Workout.cancelExercise());
+/* Кнопка «Назад» на экране деталей (обзор) → вернуться к тренировке */
+document.getElementById('btn-cancel-exercise').addEventListener('click', () => UI.showScreen('screen-workout'));
 
-/* Кнопка «Выполнено» на экране деталей → завершить без выбора варианта */
+/* Кнопка «Выполнено» на экране деталей → завершить текущий слот */
 document.getElementById('btn-complete-exercise').addEventListener('click', () => Workout.completeExercise());
 
-/* Кнопка «Отложить — тренажёр занят» → в конец очереди */
-document.getElementById('btn-postpone-exercise').addEventListener('click', () => Workout.cancelExercise());
+/* Кнопка «Отложить» → вернуться к тренировке (основной флоу через зоны) */
+document.getElementById('btn-postpone-exercise').addEventListener('click', () => UI.showScreen('screen-workout'));
 
-/* Кнопка «Назад» с экрана варианта → вернуться к списку вариантов */
-document.getElementById('btn-close-variation').addEventListener('click', () => UI.showScreen('screen-exercise'));
+/* Кнопка «Назад» с экрана варианта → вернуться к тренировке (три зоны) */
+document.getElementById('btn-close-variation').addEventListener('click', () => UI.showScreen('screen-workout'));
 
-/* Кнопка «Вернуться к вариантам» (нижняя) */
-document.getElementById('btn-back-to-variants').addEventListener('click', () => UI.showScreen('screen-exercise'));
+/* Кнопка «Вернуться к вариантам» (нижняя) → вернуться к тренировке */
+document.getElementById('btn-back-to-variants').addEventListener('click', () => UI.showScreen('screen-workout'));
 
 /* Кнопка «Пропустить» таймер отдыха */
 document.getElementById('btn-skip-timer').addEventListener('click', () => Workout.stopRestTimer());
