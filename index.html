@@ -672,11 +672,16 @@ html, body {
 }
 .now-card-header {
   display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 6px;
+  justify-content: space-between; margin-bottom: 8px;
 }
 .now-stars {
   font-size: 11px; color: var(--led); letter-spacing: 1px;
 }
+/* Тело карточки: текст слева, миниатюра справа */
+.now-card-body {
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.now-card-text { flex: 1; min-width: 0; }
 .now-movement {
   font-family: var(--exo); font-size: 14px; font-weight: 700;
   color: var(--white); margin-bottom: 3px; line-height: 1.3;
@@ -685,6 +690,18 @@ html, body {
   font-family: var(--exo); font-size: 11px; color: var(--text-dim);
   margin-bottom: 7px; line-height: 1.35;
 }
+/* Миниатюра упражнения */
+.now-card-thumb {
+  width: 72px; min-width: 72px; height: 72px;
+  border-radius: 6px; overflow: hidden;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.now-card-thumb img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.now-card-thumb-dim { opacity: 0.5; }
+
 .now-actions { display: flex; gap: 8px; margin-top: 10px; }
 .now-actions .btn { flex: 1; }
 
@@ -3058,14 +3075,23 @@ const Workout = {
             <span class="exercise-type-badge">${sl.type}</span>
             <span class="now-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>
           </div>
-          <div class="now-movement">${sl.movement}</div>
-          <div class="now-variant-name">${variant.name}</div>
-          <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+          <div class="now-card-body">
+            <div class="now-card-text">
+              <div class="now-movement">${sl.movement}</div>
+              <div class="now-variant-name">${variant.name}</div>
+              <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+            </div>
+            <div class="now-card-thumb">
+              <img src="data:," alt="${variant.name}" data-fallback="exercise">
+            </div>
+          </div>
           <div class="now-actions">
             <button class="btn btn-primary" data-action="slot-start" data-slot="${slotIdx}" data-varidx="${topVarIdx}">→ Начать</button>
             <button class="btn btn-ghost" data-action="slot-busy" data-slot="${slotIdx}">⊘ Занято</button>
           </div>`;
         z1.appendChild(card);
+        ImgLoader.setSrc(card.querySelector('.now-card-thumb img'),
+          `assets/img/exercises/${variant.img}.png`, variant.name);
       });
       list.appendChild(z1);
     }
@@ -3087,14 +3113,23 @@ const Workout = {
             <span class="exercise-type-badge">${slot.type}</span>
             <span class="check-busy-label">занято</span>
           </div>
-          <div class="now-movement">${slot.movement}</div>
-          <div class="now-variant-name">${variant.name}</div>
-          <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+          <div class="now-card-body">
+            <div class="now-card-text">
+              <div class="now-movement">${slot.movement}</div>
+              <div class="now-variant-name">${variant.name}</div>
+              <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+            </div>
+            <div class="now-card-thumb now-card-thumb-dim">
+              <img src="data:," alt="${variant.name}" data-fallback="exercise">
+            </div>
+          </div>
           <div class="now-actions">
             <button class="btn btn-primary" data-action="check-start" data-slot="${slotIdx}" data-varidx="${varIdx}">→ Освободилось</button>
             <button class="btn btn-ghost" data-action="check-dismiss" data-slot="${slotIdx}" data-varidx="${varIdx}">✕ Пропустить</button>
           </div>`;
         z2.appendChild(card);
+        ImgLoader.setSrc(card.querySelector('.now-card-thumb img'),
+          `assets/img/exercises/${variant.img}.png`, variant.name);
       });
       list.appendChild(z2);
     }
