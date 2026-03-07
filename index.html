@@ -1967,8 +1967,48 @@ const ImgLoader = {
   },
 
   /**
+   * Преобразует имя файла в формат fitnessprogramer.com
+   * Пример: "chest-flat-barbell" → "Chest-Flat-Barbell"
+   *
+   * @param {string} filename — имя файла (kebab-case)
+   * @returns {string} — имя для fitnessprogramer (Title-Case)
+   */
+  toFitnessName(filename) {
+    return filename
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('-');
+  },
+
+  /**
+   * Генерирует URL к картинке на fitnessprogramer.com
+   * Пробует несколько вариантов с разными датами/форматами
+   *
+   * @param {string} filename — имя файла упражнения
+   * @returns {string} — URL к GIF на fitnessprogramer.com
+   */
+  getFitnessUrl(filename) {
+    const name = this.toFitnessName(filename);
+    /* Пробуем несколько вариантов URL с разными датами */
+    const variants = [
+      `https://fitnessprogramer.com/wp-content/uploads/2025/12/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2025/11/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2025/10/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2025/09/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2025/08/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2025/07/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2025/06/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2024/03/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2021/06/${name}.gif`,
+      `https://fitnessprogramer.com/wp-content/uploads/2021/02/${name}.gif`,
+    ];
+    return variants[0]; /* Начинаем с последней даты */
+  },
+
+  /**
    * Устанавливает src для <img> с автоматическим fallback.
-   * При ошибке загрузки — подставляет SVG-заглушку с ожидаемым именем файла.
+   * Сначала пробует загрузить с fitnessprogramer.com (для разработки),
+   * затем с локального пути. При ошибке — подставляет SVG-заглушку.
    *
    * @param {HTMLImageElement} img — элемент <img>
    * @param {string} src — путь к файлу изображения
@@ -1976,20 +2016,33 @@ const ImgLoader = {
    */
   setSrc(img, src, label) {
     img.classList.remove('loaded');
-    img.onerror = () => {
-      /* Файл не найден — подставляем заглушку */
-      const w = (img.parentElement && img.parentElement.offsetWidth) || 200;
-      const h = (img.parentElement && img.parentElement.offsetHeight) || 120;
-      /* Извлекаем имя файла из src для разработки */
-      const filename = src.split('/').pop();
-      img.src = this.placeholder(w, h, label || img.alt || 'Изображение', filename);
-      img.classList.add('loaded');
-      img.onerror = null;  /* Предотвращаем рекурсию */
+    const filename = src.split('/').pop().replace(/\.[^/.]+$/, ''); /* Убираем расширение */
+    let attempts = 0;
+
+    const tryLoad = (url, isFitness = false) => {
+      img.onerror = () => {
+        attempts++;
+        if (isFitness && attempts < 2) {
+          /* Попытались fitnessprogramer, теперь пробуем локально */
+          tryLoad(src, false);
+        } else {
+          /* Все попытки исчерпаны — показываем заглушку */
+          const w = (img.parentElement && img.parentElement.offsetWidth) || 200;
+          const h = (img.parentElement && img.parentElement.offsetHeight) || 120;
+          img.src = this.placeholder(w, h, label || img.alt || 'Изображение', filename);
+          img.classList.add('loaded');
+          img.onerror = null;
+        }
+      };
+      img.onload = () => {
+        img.classList.add('loaded');
+      };
+      img.src = url;
     };
-    img.onload = () => {
-      img.classList.add('loaded');
-    };
-    img.src = src;
+
+    /* Сначала пробуем fitnessprogramer.com */
+    const fitnessUrl = this.getFitnessUrl(filename);
+    tryLoad(fitnessUrl, true);
   },
 
   /**
