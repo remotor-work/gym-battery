@@ -2623,6 +2623,46 @@ const App = {
       reader.readAsText(file);
     });
     input.click();
+  },
+
+  /**
+   * Полная очистка кэша браузера и Service Worker.
+   * Удаляет:
+   * • Весь localStorage
+   * • Все кэши Service Worker
+   * • Выгружает Service Worker
+   * Затем перезагружает страницу чтобы загрузить всё заново.
+   */
+  async clearCache() {
+    try {
+      /* Очищаем localStorage */
+      localStorage.clear();
+
+      /* Выгружаем Service Worker и очищаем кэши */
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+
+      /* Очищаем все кэши (CacheStorage API) */
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        for (const cacheName of cacheNames) {
+          await caches.delete(cacheName);
+        }
+      }
+
+      /* Показываем уведомление и перезагружаем */
+      UI.toast('Кэш очищен 🔄 Перезагрузка...');
+      setTimeout(() => {
+        window.location.reload(true); /* true = игнорировать кэш при reload */
+      }, 1500);
+    } catch (e) {
+      console.error('Ошибка при очистке кэша:', e);
+      UI.toast('Ошибка при очистке кэша');
+    }
   }
 };
 
@@ -2909,6 +2949,10 @@ const UI = {
       </div>
       <div class="settings-group">
         <div class="settings-group-title">// Опасная зона</div>
+        <div class="setting-row">
+          <div class="setting-label">Полная очистка кэша<small>Удаляет кэш браузера и Service Worker</small></div>
+          <button class="btn btn-ghost" id="btn-clear-cache" style="border-color:var(--led-dim);color:var(--led-dim)">Очистить кэш</button>
+        </div>
         <div class="setting-row">
           <div class="setting-label">Удалить все данные<small>Необратимое действие</small></div>
           <button class="btn btn-ghost" id="btn-clear-all" style="border-color:var(--red-dim);color:var(--red-dim)">Очистить</button>
@@ -3817,6 +3861,15 @@ document.addEventListener('click', (e) => {
   /* Импорт данных */
   if (e.target.id === 'btn-import') {
     App.importData();
+    return;
+  }
+  /* Полная очистка кэша и Service Worker */
+  if (e.target.id === 'btn-clear-cache') {
+    UI.confirm('Очистить весь кэш?', 'Удалены будут кэш браузера, Service Worker и временные данные. Приложение перезагрузится.').then(ok => {
+      if (ok) {
+        App.clearCache();
+      }
+    });
     return;
   }
   /* Очистить все данные */
