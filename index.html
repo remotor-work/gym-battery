@@ -1450,7 +1450,7 @@ html, body {
   <div class="screen active" id="screen-home">
     <div class="app-header">
       <div class="header-left">
-        <div class="logo">PWA · v3.1</div>
+        <div class="logo">PWA · v3.2</div>
         <div class="title">GYM BATTERY</div>
       </div>
       <div class="header-right">
@@ -1967,259 +1967,43 @@ const ImgLoader = {
   },
 
   /**
-   * Прямая карта: имя файла упражнения → точный URL GIF на fitnessprogramer.com
-   * Собрана путём парсинга страниц сайта. Покрывает все 168 вариантов из приложения.
-   * @type {Object.<string, string>}
-   */
-  fitnessUrlMap: {
-    /* ── Д1-1: Горизонтальный жим ── */
-    'chest-flat-barbell':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif',
-    'chest-flat-dumbbell':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Press-1.gif',
-    'chest-flat-smith':      'https://fitnessprogramer.com/wp-content/uploads/2021/06/Smith-Machine-Behind-Neck-Press.gif',
-    'chest-flat-machine':    'https://fitnessprogramer.com/wp-content/uploads/2021/06/Inner-Chest-Press-Machine.gif',
-    'chest-flat-cable':      'https://fitnessprogramer.com/wp-content/uploads/2021/12/One-Arm-Cable-Chest-Press.gif',
-    'chest-flat-converge':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Press-1.gif',
-    'chest-flat-neutral':    'https://fitnessprogramer.com/wp-content/uploads/2021/06/Incline-Dumbbel-Hammer-Press.gif',
-    /* ── Д1-2: Тяга верхнего блока / Подтягивания ── */
-    'back-pulldown-wide':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Lat-Pulldown.gif',
-    'back-pullup-weighted':  'https://fitnessprogramer.com/wp-content/uploads/2021/04/Weighted-Pull-up.gif',
-    'back-pulldown-machine': 'https://fitnessprogramer.com/wp-content/uploads/2021/06/V-bar-Lat-Pulldown.gif',
-    'back-pulldown-reverse': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/Reverse-Lat-Pulldown.gif',
-    'back-pulldown-close-neutral': 'https://fitnessprogramer.com/wp-content/uploads/2021/06/V-bar-Lat-Pulldown.gif',
-    'back-pullup-assisted':  'https://fitnessprogramer.com/wp-content/uploads/2021/04/Assisted-Pull-up.gif',
-    'back-pulldown-single':  'https://fitnessprogramer.com/wp-content/uploads/2021/06/Cable-One-Arm-Lat-Pulldown.gif',
-    /* ── Д1-3: Наклонный жим ── */
-    'chest-incline-barbell': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Incline-Barbell-Bench-Press.gif',
-    'chest-incline-dumbbell':'https://fitnessprogramer.com/wp-content/uploads/2021/02/Incline-Dumbbell-Press.gif',
-    'chest-incline-smith':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Incline-Barbell-Bench-Press.gif',
-    'chest-incline-cable-low':'https://fitnessprogramer.com/wp-content/uploads/2021/02/Low-Cable-Crossover.gif',
-    'chest-incline-machine': 'https://fitnessprogramer.com/wp-content/uploads/2021/06/Lever-Incline-Chest-Press.gif',
-    'chest-incline-cable-high':'https://fitnessprogramer.com/wp-content/uploads/2021/06/Lying-Cable-Fly.gif',
-    'chest-incline-lever':   'https://fitnessprogramer.com/wp-content/uploads/2021/06/Lever-Incline-Chest-Press.gif',
-    /* ── Д1-4: Разводка груди ── */
-    'chest-fly-dumbbell-flat': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Fly.gif',
-    'chest-fly-cable-high':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/High-Cable-Crossover.gif',
-    'chest-fly-pecdeck':       'https://fitnessprogramer.com/wp-content/uploads/2021/02/Pec-Deck-Fly.gif',
-    'chest-fly-dumbbell-incline': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Incline-dumbbell-Fly.gif',
-    'chest-fly-cable-mid':     'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Crossover.gif',
-    'chest-fly-pecdeck-neutral':'https://fitnessprogramer.com/wp-content/uploads/2021/02/Pec-Deck-Fly.gif',
-    'chest-fly-lever':         'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Fly.gif',
-    /* ── Д1-5: Подъём в стороны ── */
-    'delt-lateral-dumbbell-standing': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lateral-Raise.gif',
-    'delt-lateral-dumbbell-seated':   'https://fitnessprogramer.com/wp-content/uploads/2021/04/Seated-Dumbbell-Lateral-Raise.gif',
-    'delt-lateral-cable':     'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Lateral-Raise.gif',
-    'delt-lateral-machine':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lateral-Raise.gif',
-    'delt-lateral-forepad':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lateral-Raise.gif',
-    'delt-lateral-cable-cross': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Lateral-Raise.gif',
-    'delt-lateral-cable-behind': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Lateral-Raise.gif',
-    /* ── Д1-6: Трицепс ── */
-    'tri-pushdown-bar':       'https://fitnessprogramer.com/wp-content/uploads/2021/02/Pushdown.gif',
-    'tri-pushdown-rope':      'https://fitnessprogramer.com/wp-content/uploads/2021/02/Pushdown.gif',
-    'tri-extension-barbell-lying': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Triceps-Extension.gif',
-    'tri-extension-dumbbell-lying': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/One-Arm-Lying-Triceps-Extension.gif',
-    'tri-extension-cable-overhead': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/Cable-Rope-Overhead-Triceps-Extension.gif',
-    'tri-extension-machine-overhead': 'https://fitnessprogramer.com/wp-content/uploads/2021/09/Kneeling-Cable-Extension.gif',
-    'tri-extension-dumbbell-overhead': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/One-Arm-Lying-Triceps-Extension.gif',
-    /* ── Д2-1: Приседание ── */
-    'legs-squat-back':        'https://fitnessprogramer.com/wp-content/uploads/2021/02/BARBELL-SQUAT.gif',
-    'legs-squat-front':       'https://fitnessprogramer.com/wp-content/uploads/2021/02/BARBELL-SQUAT.gif',
-    'legs-squat-smith':       'https://fitnessprogramer.com/wp-content/uploads/2024/10/smith-machine-squat.gif',
-    'legs-squat-goblet':      'https://fitnessprogramer.com/wp-content/uploads/2023/01/Dumbbell-Goblet-Squat.gif',
-    'legs-squat-hack':        'https://fitnessprogramer.com/wp-content/uploads/2021/02/Sled-Hack-Squat.gif',
-    'legs-extension-machine': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/LEG-EXTENSION.gif',
-    'legs-squat-smith-narrow':'https://fitnessprogramer.com/wp-content/uploads/2024/10/smith-machine-squat.gif',
-    /* ── Д2-2: Румынская тяга / Гиперэкстензия ── */
-    'legs-rdl-barbell':       'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Romanian-Deadlift.gif',
-    'legs-rdl-dumbbell':      'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Romanian-Deadlift.gif',
-    'legs-rdl-smith':         'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Romanian-Deadlift.gif',
-    'legs-rdl-cable-pull':    'https://fitnessprogramer.com/wp-content/uploads/2021/06/Cable-Pull-Through.gif',
-    'legs-back-extension':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Romanian-Deadlift.gif',
-    'legs-rdl-single':        'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Romanian-Deadlift.gif',
-    'legs-rdl-stiff':         'https://fitnessprogramer.com/wp-content/uploads/2021/04/Dumbbell-Straight-Leg-Deadlift.gif',
-    /* ── Д2-3: Жим ног ── */
-    'legs-press-horizontal':  'https://fitnessprogramer.com/wp-content/uploads/2015/11/Leg-Press.gif',
-    'legs-press-45deg':       'https://fitnessprogramer.com/wp-content/uploads/2015/11/Leg-Press.gif',
-    'legs-press-narrow':      'https://fitnessprogramer.com/wp-content/uploads/2015/11/Leg-Press.gif',
-    'legs-press-single':      'https://fitnessprogramer.com/wp-content/uploads/2015/11/Leg-Press.gif',
-    'legs-press-sumo':        'https://fitnessprogramer.com/wp-content/uploads/2015/11/Leg-Press.gif',
-    'legs-press-paused':      'https://fitnessprogramer.com/wp-content/uploads/2015/11/Leg-Press.gif',
-    'legs-extension-single':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/LEG-EXTENSION.gif',
-    /* ── Д2-4: Сгибание ног ── */
-    'legs-curl-lying':        'https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Curl.gif',
-    'legs-curl-seated':       'https://fitnessprogramer.com/wp-content/uploads/2021/08/Seated-Leg-Curl.gif',
-    'legs-curl-standing':     'https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Curl.gif',
-    'legs-curl-cable-lying':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Curl.gif',
-    'legs-curl-nordic':       'https://fitnessprogramer.com/wp-content/uploads/2021/06/Nordic-Hamstring-Curl.gif',
-    'legs-curl-cable-standing': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Curl.gif',
-    'legs-curl-single':       'https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Curl.gif',
-    /* ── Д2-5: Задние дельты ── */
-    'delt-rear-fly-bent':     'https://fitnessprogramer.com/wp-content/uploads/2021/02/Seated-Rear-Lateral-Dumbbell-Raise.gif',
-    'delt-rear-machine-reverse': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Rear-Delt-Machine-Flys.gif',
-    'delt-rear-cable-cross':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Crossover.gif',
-    'delt-rear-machine-dedicated': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Rear-Delt-Machine-Flys.gif',
-    'delt-rear-cable-low':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Lateral-Raise.gif',
-    'delt-rear-machine-row':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Face-Pull.gif',
-    'delt-rear-cable-fly':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Crossover.gif',
-    /* ── Д2-6: Выпады ── */
-    'legs-lunge-walking':     'https://fitnessprogramer.com/wp-content/uploads/2023/09/dumbbell-lunges.gif',
-    'legs-lunge-bulgarian':   'https://fitnessprogramer.com/wp-content/uploads/2021/05/Dumbbell-Bulgarian-Split-Squat.gif',
-    'legs-lunge-barbell':     'https://fitnessprogramer.com/wp-content/uploads/2021/05/Barbell-Lunge.gif',
-    'legs-lunge-reverse':     'https://fitnessprogramer.com/wp-content/uploads/2021/05/Dumbbell-Rear-Lunge.gif',
-    'legs-stepup-dumbbell':   'https://fitnessprogramer.com/wp-content/uploads/2021/12/Dumbeel-Step-Up.gif',
-    'legs-lunge-bulgarian-smith': 'https://fitnessprogramer.com/wp-content/uploads/2021/05/Barbell-Bulgarian-Split-Squat.gif',
-    'legs-lunge-reverse-smith': 'https://fitnessprogramer.com/wp-content/uploads/2021/05/Dumbbell-Rear-Lunge.gif',
-    /* ── Д3-1: Горизонтальная тяга ── */
-    'back-row-cable-seated':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Seated-Cable-Row.gif',
-    'back-row-barbell-overhand': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bent-Over-Row.gif',
-    'back-row-dumbbell-both': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Bent-Over-Dumbbell-Row.gif',
-    'back-row-chest-support': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/45-Degree-Incline-Row.gif',
-    'back-row-lever-hammer':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Seated-Row-Machine.gif',
-    'back-row-machine-vertical': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Seated-Row-Machine.gif',
-    'back-row-cable-standing': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/One-arm-Cable-Row.gif',
-    /* ── Д3-2: Жим над головой ── */
-    'shoulder-press-barbell': 'https://fitnessprogramer.com/wp-content/uploads/2021/07/Barbell-Standing-Military-Press.gif',
-    'shoulder-press-dumbbell': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Shoulder-Press.gif',
-    'shoulder-press-machine': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/Lever-Shoulder-Press.gif',
-    'shoulder-press-smith':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Smith-Machine-Shoulder-Press.gif',
-    'shoulder-press-arnold':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Arnold-Press.gif',
-    'shoulder-press-lever':   'https://fitnessprogramer.com/wp-content/uploads/2021/04/Lever-Shoulder-Press.gif',
-    'shoulder-press-alt':     'https://fitnessprogramer.com/wp-content/uploads/2023/09/Standing-Dumbbell-Overhead-Press.gif',
-    /* ── Д3-3: Тяга в наклоне (нижний хват) / Пуловер ── */
-    'back-row-barbell-underhand': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/Reverse-Grip-Barbell-Row.gif',
-    'back-row-tbar':          'https://fitnessprogramer.com/wp-content/uploads/2021/04/t-bar-rows.gif',
-    'back-row-dumbbell-single': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Row.gif',
-    'back-row-cable-bent':    'https://fitnessprogramer.com/wp-content/uploads/2021/09/Cable-Bent-Over-Row.gif',
-    'back-row-tbar-machine':  'https://fitnessprogramer.com/wp-content/uploads/2021/04/t-bar-rows.gif',
-    'back-pullover-dumbbell': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Pullover.gif',
-    'back-row-cable-bilateral': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Seated-Cable-Row.gif',
-    /* ── Д3-4: Декляйн / Брусья ── */
-    'chest-decline-barbell':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif',
-    'chest-decline-dumbbell': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Decline-Dumbbell-Press.gif',
-    'chest-decline-smith':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Decline-Dumbbell-Press.gif',
-    'chest-decline-machine':  'https://fitnessprogramer.com/wp-content/uploads/2021/06/Inner-Chest-Press-Machine.gif',
-    'chest-decline-pushup':   'https://fitnessprogramer.com/wp-content/uploads/2021/06/Drop-Push-Up.gif',
-    'chest-dips':             'https://fitnessprogramer.com/wp-content/uploads/2021/06/Chest-Dips.gif',
-    'chest-decline-cable':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Low-Cable-Crossover.gif',
-    /* ── Д3-5: Бицепс ── */
-    'bi-curl-barbell':        'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Curl.gif',
-    'bi-curl-dumbbell-alt':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Curl.gif',
-    'bi-curl-preacher':       'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Preacher-Curl.gif',
-    'bi-curl-cable':          'https://fitnessprogramer.com/wp-content/uploads/2021/02/One-Arm-Cable-Curl.gif',
-    'bi-curl-machine':        'https://fitnessprogramer.com/wp-content/uploads/2021/04/Lever-Preacher-Curl.gif',
-    'bi-curl-concentration':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Concentration-Curl.gif',
-    'bi-curl-incline':        'https://fitnessprogramer.com/wp-content/uploads/2021/02/Seated-Incline-Dumbbell-Curl.gif',
-    /* ── Д3-6: Трапеции / Face Pull ── */
-    'trap-face-pull-cable':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Face-Pull.gif',
-    'trap-face-pull-band':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Face-Pull.gif',
-    'trap-upright-row':       'https://fitnessprogramer.com/wp-content/uploads/2021/02/barbell-uprightrow.gif',
-    'trap-face-pull-seated':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Face-Pull.gif',
-    'back-pulldown-straight-arm': 'https://fitnessprogramer.com/wp-content/uploads/2021/05/Cable-Straight-Arm-Pulldown.gif',
-    'trap-upright-row-cable': 'https://fitnessprogramer.com/wp-content/uploads/2021/02/barbell-uprightrow.gif',
-    'trap-high-pull-rope':    'https://fitnessprogramer.com/wp-content/uploads/2021/06/Rope-Straight-Arm-Pulldown.gif',
-    /* ── Д4-3: Трицепс (брусья / жим узкий) ── */
-    'tri-dips-weighted':      'https://fitnessprogramer.com/wp-content/uploads/2021/02/Triceps-Dips.gif',
-    'tri-dips-assisted':      'https://fitnessprogramer.com/wp-content/uploads/2021/06/Assisted-Chest-Dip.gif',
-    'tri-press-close-grip':   'https://fitnessprogramer.com/wp-content/uploads/2021/02/Close-Grip-Bench-Press.gif',
-    'tri-dips-machine':       'https://fitnessprogramer.com/wp-content/uploads/2021/04/Lever-Overhand-Triceps-Dip.gif',
-    'tri-pushup-wide':        'https://fitnessprogramer.com/wp-content/uploads/2021/06/Narrow-Grip-Wall-Push-Up.gif',
-    'tri-pushdown-single':    'https://fitnessprogramer.com/wp-content/uploads/2022/11/One-arm-triceps-pushdown.gif',
-    'tri-kickback-cable':     'https://fitnessprogramer.com/wp-content/uploads/2021/02/Cable-Tricep-Kickback.gif',
-    /* ── Д4-4: Тяга/Пуловер ── */
-    'back-pulldown-behind-neck': 'https://fitnessprogramer.com/wp-content/uploads/2021/08/Cable-Rear-Pulldown.gif',
-    'back-pulldown-machine-behind': 'https://fitnessprogramer.com/wp-content/uploads/2021/08/Cable-Rear-Pulldown.gif',
-    'back-pullover-machine':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Pullover.gif',
-    'back-pulldown-neutral':  'https://fitnessprogramer.com/wp-content/uploads/2021/06/V-bar-Lat-Pulldown.gif',
-    'back-pullup-neutral':    'https://fitnessprogramer.com/wp-content/uploads/2021/04/Close-Grip-Chin-Up.gif',
-    /* ── Д4-5: Тяга одной рукой ── */
-    'back-row-cable-single':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/One-arm-Cable-Row.gif',
-    'back-row-machine-single': 'https://fitnessprogramer.com/wp-content/uploads/2021/06/Reverse-Grip-Machine-Row.gif',
-    'back-row-lever-single':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Row.gif',
-    'back-row-cable-side':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/One-arm-Cable-Row.gif',
-    'back-row-trx-single':    'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Row.gif',
-    'back-row-kroc':          'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Row.gif',
-    /* ── Д4-6: Обратный хват / Молотковые ── */
-    'bi-curl-reverse-barbell': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/dumbbell-reverse-curl.gif',
-    'bi-curl-reverse-dumbbell': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/dumbbell-reverse-curl.gif',
-    'bi-curl-reverse-cable':  'https://fitnessprogramer.com/wp-content/uploads/2021/02/One-Arm-Reverse-Push-Down.gif',
-    'bi-curl-hammer':         'https://fitnessprogramer.com/wp-content/uploads/2021/02/Hammer-Curl.gif',
-    'bi-curl-zottman':        'https://fitnessprogramer.com/wp-content/uploads/2021/04/zottman-curl.gif',
-    'bi-curl-reverse-preacher': 'https://fitnessprogramer.com/wp-content/uploads/2021/04/Lever-Preacher-Curl.gif',
-    'bi-curl-hammer-cross':   'https://fitnessprogramer.com/wp-content/uploads/2021/04/High-Cable-Single-Arm-Bicep-Curl.gif',
-  },
-
-  /**
-   * Возвращает массив URL для попытки загрузки.
-   * Сначала ищет прямой URL в fitnessUrlMap, затем генерирует варианты.
-   *
-   * @param {string} filename — имя файла упражнения (kebab-case)
-   * @returns {string[]} — массив URL для попытки загрузки
-   */
-  getFitnessUrl(filename) {
-    /* Прямой URL из карты — первый и главный вариант */
-    if (this.fitnessUrlMap[filename]) {
-      return [this.fitnessUrlMap[filename]];
-    }
-    /* Fallback: генерируем по датам */
-    const name = filename.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
-    const dates = ['2025/10', '2025/09', '2025/08', '2025/07', '2024/03', '2021/06', '2021/02'];
-    return dates.map(d => `https://fitnessprogramer.com/wp-content/uploads/${d}/${name}.gif`);
-  },
-
-  /**
    * Устанавливает src для <img> с автоматическим fallback.
-   * Сначала пробует загрузить с fitnessprogramer.com (с несколькими вариантами имён и дат),
-   * затем с локального пути. При ошибке — подставляет SVG-заглушку.
+   * Цепочка попыток для упражнений: локальный .gif → оригинальный src → SVG-заглушка.
+   * Для остальных изображений (мышцы, UI): src → SVG-заглушка.
    *
    * @param {HTMLImageElement} img — элемент <img>
-   * @param {string} src — путь к файлу изображения
+   * @param {string} src — путь к файлу изображения (PNG/JPEG)
    * @param {string} [label] — текст для заглушки (по умолчанию из alt)
    */
   setSrc(img, src, label) {
     img.classList.remove('loaded');
     const filename = src.split('/').pop().replace(/\.[^/.]+$/, ''); /* Убираем расширение */
+    const isExercise = src.indexOf('/exercises/') !== -1;
+
+    /* Строим цепочку URL: для упражнений сначала GIF, затем оригинальный src */
+    const urls = [];
+    if (isExercise) urls.push('assets/img/exercises/' + filename + '.gif');
+    urls.push(src);
     let urlIndex = 0;
-    let triedLocal = false;
 
-    const tryNextUrl = () => {
-      const fitnessUrls = this.getFitnessUrl(filename);
-
-      if (urlIndex < fitnessUrls.length) {
-        /* Пробуем следующий вариант fitnessprogramer URL */
-        const url = fitnessUrls[urlIndex++];
-        img.onerror = tryNextUrl; /* При ошибке → попробовать следующий URL */
-        img.onload = () => {
-          img.classList.add('loaded');
-          img.onerror = null;
-          img.onload = null;
-        };
+    const tryNext = () => {
+      if (urlIndex < urls.length) {
+        const url = urls[urlIndex++];
+        img.onerror = tryNext;
+        img.onload = () => { img.classList.add('loaded'); img.onerror = null; img.onload = null; };
         img.src = url;
-      } else if (!triedLocal) {
-        /* Все fitnessprogramer URL исчерпаны → пробуем локальный путь */
-        triedLocal = true;
-        img.onerror = tryShowPlaceholder;
-        img.onload = () => {
-          img.classList.add('loaded');
-          img.onerror = null;
-          img.onload = null;
-        };
-        img.src = src;
       } else {
-        /* Все попытки исчерпаны — показываем заглушку */
-        tryShowPlaceholder();
+        /* Все попытки исчерпаны — показываем SVG-заглушку */
+        const w = (img.parentElement && img.parentElement.offsetWidth) || 200;
+        const h = (img.parentElement && img.parentElement.offsetHeight) || 120;
+        img.src = this.placeholder(w, h, label || img.alt || 'Изображение', filename);
+        img.classList.add('loaded');
+        img.onerror = null;
+        img.onload = null;
       }
     };
 
-    const tryShowPlaceholder = () => {
-      const w = (img.parentElement && img.parentElement.offsetWidth) || 200;
-      const h = (img.parentElement && img.parentElement.offsetHeight) || 120;
-      img.src = this.placeholder(w, h, label || img.alt || 'Изображение', filename);
-      img.classList.add('loaded');
-      img.onerror = null;
-      img.onload = null;
-    };
-
-    /* Начинаем с первого URL */
-    tryNextUrl();
+    tryNext();
   },
 
   /**
@@ -2582,8 +2366,6 @@ const dayDescriptions = {
  * @type {string[]}
  */
 const DAYS_ORDER = ["Д1","Д2","Д3","Д4"];
-
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    APP — Управление состоянием и данными
