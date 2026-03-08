@@ -712,9 +712,28 @@ html, body {
   0%   { border-color: var(--led); box-shadow: 0 0 18px rgba(217,115,32,0.45); }
   100% { border-color: var(--border); box-shadow: none; }
 }
+/* Альтернативный вариант — акцентная левая полоса */
+.now-card--alt {
+  border-left: 3px solid var(--led);
+}
 .now-card-header {
   display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 8px;
+  gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.now-card-header .now-stars { margin-left: auto; }
+/* Бейдж «АЛЬТЕРНАТИВА» */
+.now-alt-badge {
+  font-family: var(--exo); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--led);
+  background: var(--led-bg);
+  border: 1px solid var(--led-dim);
+  border-radius: 3px; padding: 1px 5px;
+  text-transform: uppercase;
+}
+/* Счётчик варианта */
+.now-var-counter {
+  font-family: var(--exo); font-size: 9px; font-weight: 500;
+  color: var(--text-dim); letter-spacing: 0.04em;
 }
 .now-stars {
   font-size: 11px; color: var(--led); letter-spacing: 1px;
@@ -747,21 +766,25 @@ html, body {
 .now-actions { display: flex; gap: 8px; margin-top: 10px; }
 .now-actions .btn { flex: 1; }
 
-/* ПРОВЕРЬ */
+/* ПРОВЕРЬ — компактные карточки, визуально отличаются от Зоны 1 */
 .check-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px dashed var(--border);
   border-radius: 8px;
-  padding: 11px 14px 10px;
+  padding: 10px 12px 8px;
   margin-bottom: 8px;
-  opacity: 0.72;
+  opacity: 0.6;
 }
+.check-card .now-movement { font-size: 12px; }
+.check-card .now-variant-name { font-size: 11px; opacity: 0.6; }
+.check-card .now-card-thumb { width: 52px; min-width: 52px; height: 52px; }
 .check-card-header {
   display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
 }
 .check-busy-label {
   font-family: var(--exo); font-size: 9px; font-weight: 700;
-  letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.1em; color: #c45c5c; text-transform: uppercase;
+  background: rgba(196,92,92,0.1); padding: 1px 5px; border-radius: 3px;
 }
 
 /* ВЫПОЛНЕНО */
@@ -3233,15 +3256,20 @@ const Workout = {
       pendingSlots.forEach(sl => {
         const slotIdx = s.slots.indexOf(sl);
         const varKey = s.currentDay + '-' + sl.id;
+        const totalVars = (exerciseVariations[varKey] || []).length;
         const topVarIdx = sl.varQueue[0];
         const variant = (exerciseVariations[varKey] || [])[topVarIdx];
         if (!variant) return;
         const stars = varPriority(topVarIdx);
+        const isAlternative = sl.busy.length > 0; /* Уже нажимали «Занято» */
+        const varNum = topVarIdx + 1; /* Номер текущего варианта (1-based) */
         const card = document.createElement('div');
-        card.className = 'now-card';
+        card.className = 'now-card' + (isAlternative ? ' now-card--alt' : '');
         card.innerHTML = `
           <div class="now-card-header">
             <span class="exercise-type-badge">${sl.type}</span>
+            ${isAlternative ? '<span class="now-alt-badge">АЛЬТЕРНАТИВА</span>' : ''}
+            <span class="now-var-counter">вариант ${varNum}/${totalVars}</span>
             <span class="now-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>
           </div>
           <div class="now-card-body">
