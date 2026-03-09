@@ -1449,6 +1449,13 @@ html, body {
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 
+/* Кнопка «Все варианты» в карточке слота */
+.btn-variants {
+  font-size: 11px; padding: 6px 10px;
+  color: var(--text-dim); border-color: var(--border);
+  margin-top: 4px; width: 100%;
+}
+
 /* ── Кнопки лайк/бан в карточке варианта ── */
 .var-action-row {
   display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end;
@@ -3361,6 +3368,7 @@ const Workout = {
           <div class="now-actions">
             <button class="btn btn-primary" data-action="slot-start" data-slot="${slotIdx}" data-varidx="${topVarIdx}">→ Начать</button>
             <button class="btn btn-ghost" data-action="slot-busy" data-slot="${slotIdx}">⊘ Занято</button>
+            <button class="btn btn-ghost btn-variants" data-action="open-exercise" data-index="${slotIdx}" title="Все варианты / лайк / бан">≡ Варианты</button>
           </div>`;
         z1.appendChild(card);
         ImgLoader.setSrc(card.querySelector('.now-card-thumb img'),
