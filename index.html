@@ -1448,6 +1448,34 @@ html, body {
   color: var(--text-dim); margin-top: 4px;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
+
+/* ── Кнопки лайк/бан в карточке варианта ── */
+.var-action-row {
+  display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end;
+}
+.var-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-dim);
+  font-size: 14px; padding: 3px 10px; cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.var-btn:active { opacity: .7; }
+.var-btn-like.active { color: #e85; border-color: #e85; background: rgba(238,136,85,.12); }
+.var-btn-ban.active  { color: #c44; border-color: #c44; background: rgba(204,68,68,.12); }
+
+/* Забаненная карточка — затемнение */
+.variation-card--banned { opacity: .4; }
+.variation-card--banned .var-btn-ban { pointer-events: auto; opacity: 1; }
+
+/* Настройки — секция забаненных */
+.banned-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px; color: var(--text-dim);
+}
+.banned-name { flex: 1; margin-right: 10px; }
+.btn-xs { padding: 4px 12px; font-size: 11px; }
+.settings-empty { color: var(--text-dim); font-size: 12px; padding: 8px 0; }
 </style>
 </head>
 <body>
@@ -2464,7 +2492,9 @@ const App = {
     settings: {
       setsCount: 3,
       restSeconds: 90,
-    }
+    },
+    bannedVariants: {},  // { "Д1-1:2": true, ... }
+    likedVariants:  {},  // { "Д1-1:0": true, ... }
   },
 
   /**
@@ -2491,6 +2521,8 @@ const App = {
         if (data.history)   this.persist.history   = data.history;
         if (data.weekStart) this.persist.weekStart = data.weekStart;
         if (data.settings)  this.persist.settings  = { ...this.persist.settings, ...data.settings };
+        if (data.bannedVariants) this.persist.bannedVariants = data.bannedVariants;
+        if (data.likedVariants)  this.persist.likedVariants  = data.likedVariants;
       }
     } catch(e) {
       /* localStorage недоступен — работаем без персистенции */
@@ -2504,6 +2536,23 @@ const App = {
    */
   save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.persist)); } catch(e) {}
+  },
+
+  /* ── Бан / лайк вариантов ── */
+  _vk(slotKey, varIdx) { return slotKey + ':' + varIdx; },
+  isBanned(slotKey, varIdx) { return !!this.persist.bannedVariants[this._vk(slotKey, varIdx)]; },
+  isLiked(slotKey, varIdx)  { return !!this.persist.likedVariants[this._vk(slotKey, varIdx)]; },
+  toggleBan(slotKey, varIdx) {
+    const k = this._vk(slotKey, varIdx);
+    if (this.persist.bannedVariants[k]) delete this.persist.bannedVariants[k];
+    else this.persist.bannedVariants[k] = true;
+    this.save();
+  },
+  toggleLike(slotKey, varIdx) {
+    const k = this._vk(slotKey, varIdx);
+    if (this.persist.likedVariants[k]) delete this.persist.likedVariants[k];
+    else this.persist.likedVariants[k] = true;
+    this.save();
   },
 
   /**
@@ -3000,6 +3049,26 @@ const UI = {
           </div>
         </div>
       </div>
+      ${(() => {
+        const banned = Object.keys(App.persist.bannedVariants);
+        let bhtml = `<div class="settings-group">
+        <div class="settings-group-title">// Заблокированные упражнения</div>`;
+        if (banned.length === 0) {
+          bhtml += `<div class="settings-empty">Нет заблокированных упражнений</div>`;
+        } else {
+          banned.forEach(key => {
+            const [slotKey, varIdx] = key.split(':');
+            const variant = (exerciseVariations[slotKey] || [])[+varIdx];
+            if (!variant) return;
+            bhtml += `<div class="banned-item">
+              <span class="banned-name">${variant.name}</span>
+              <button class="btn btn-ghost btn-xs" data-action="unban-variant" data-key="${key}">Вернуть</button>
+            </div>`;
+          });
+        }
+        bhtml += `</div>`;
+        return bhtml;
+      })()}
       <div class="settings-group">
         <div class="settings-group-title">// Опасная зона</div>
         <div class="setting-row">
@@ -3182,7 +3251,14 @@ const Workout = {
       const vars = exerciseVariations[varKey] || [];
       return {
         id: ex.id, type: ex.type, muscle: ex.muscle, movement: ex.movement,
-        varQueue: vars.map((_, i) => i), // [0,1,2,...] — порядок по приоритету
+        varQueue: vars
+          .map((_, i) => i)
+          .filter(i => !App.isBanned(varKey, i))
+          .sort((a, b) => {
+            const pa = varPriority(a), pb = varPriority(b);
+            if (pa !== pb) return pb - pa;
+            return (App.isLiked(varKey, b) ? 1 : 0) - (App.isLiked(varKey, a) ? 1 : 0);
+          }),
         busy: [],           // [{idx}] — варианты, отмеченные "занято" → зона ПРОВЕРЬ
         done: false,        // слот выполнен
         doneVarIdx: null,   // какой вариант был выбран
@@ -3385,15 +3461,29 @@ const Workout = {
     /* ── Рендерим список вариантов ── */
     const varsEl = document.getElementById('det-variations');
     if (vars.length) {
-      varsEl.innerHTML = vars.map((v, i) => `
-        <div class="variation-card" data-action="open-variation" data-varkey="${varKey}" data-varidx="${i}" role="button" tabindex="0" aria-label="${v.name}">
-          <span class="var-arrow">›</span>
+      varsEl.innerHTML = vars.map((v, i) => {
+        const isBanned = App.isBanned(varKey, i);
+        const isLiked  = App.isLiked(varKey, i);
+        return `
+        <div class="variation-card${isBanned ? ' variation-card--banned' : ''}"
+             ${isBanned ? '' : `data-action="open-variation" data-varkey="${varKey}" data-varidx="${i}"`}
+             role="button" tabindex="0" aria-label="${v.name}">
+          ${isBanned ? '' : '<span class="var-arrow">›</span>'}
           <div class="variation-card-header">
             <span class="var-num">${String(i + 1).padStart(2, '0')}</span>
             <span class="var-name">${v.name}</span>
           </div>
           <div class="var-equipment-row">${v.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
-        </div>`).join('');
+          <div class="var-action-row">
+            <button class="var-btn var-btn-like${isLiked ? ' active' : ''}"
+                    data-action="like-variant" data-varkey="${varKey}" data-varidx="${i}"
+                    title="Лайк">♥</button>
+            <button class="var-btn var-btn-ban${isBanned ? ' active' : ''}"
+                    data-action="ban-variant" data-varkey="${varKey}" data-varidx="${i}"
+                    title="${isBanned ? 'Разблокировать' : 'Заблокировать'}">⊘</button>
+          </div>
+        </div>`;
+      }).join('');
     } else {
       varsEl.innerHTML = '<div style="color:var(--text-dim);font-size:11px">—</div>';
     }
@@ -3828,6 +3918,23 @@ document.getElementById('app').addEventListener('click', (e) => {
     case 'open-variation':
       Workout.openVariation(target.dataset.varkey, parseInt(target.dataset.varidx));
       break;
+
+    /* ── Лайк / бан варианта ── */
+    case 'like-variant':
+      App.toggleLike(target.dataset.varkey, +target.dataset.varidx);
+      Workout.openExercise(App.state.currentSlotIdx);
+      break;
+    case 'ban-variant':
+      App.toggleBan(target.dataset.varkey, +target.dataset.varidx);
+      Workout.openExercise(App.state.currentSlotIdx);
+      break;
+    case 'unban-variant': {
+      const bkey = target.dataset.key;
+      delete App.persist.bannedVariants[bkey];
+      App.save();
+      UI.renderSettings();
+      break;
+    }
 
     /* ── Каталог: открыть детали упражнения ── */
     case 'open-catalog-detail':
