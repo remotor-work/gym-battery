@@ -7,3 +7,7 @@ Thumbs.db
 
 # Editor
 .vscode/settings.json
+
+# Logs and Windows artifacts
+server.log
+nul
