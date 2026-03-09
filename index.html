@@ -1456,6 +1456,30 @@ html, body {
   margin-top: 4px; width: 100%;
 }
 
+/* Карточка теперь кликабельна */
+.now-card { cursor: pointer; }
+.now-card:active { transform: scale(0.985); }
+
+/* Миниатюра в карточке варианта (screen-exercise) */
+.var-card-thumb {
+  width: 100%; aspect-ratio: 16/9; border-radius: 6px;
+  overflow: hidden; background: var(--bg3); margin: 8px 0;
+}
+.var-card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Звёздочки мелкие (в карточке варианта) */
+.var-stars-sm {
+  font-size: 10px; color: var(--led); margin-left: auto; letter-spacing: 1px;
+}
+
+/* Ряд кнопок лайк/бан в screen-variation */
+.vd-like-ban-row {
+  display: flex; gap: 8px; margin: 10px 0 4px;
+}
+.vd-like-ban-row .var-btn {
+  flex: 1; padding: 7px; font-size: 13px;
+}
+
 /* ── Кнопки лайк/бан в карточке варианта ── */
 .var-action-row {
   display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end;
@@ -1656,6 +1680,10 @@ html, body {
       <div class="detail-main-title" id="vd-title">Название</div>
       <div class="detail-muscle-line" id="vd-muscle">Мышца</div>
       <div class="detail-priority-row" id="vd-priority"><!-- звёзды + пояснение --></div>
+      <div class="vd-like-ban-row">
+        <button class="var-btn var-btn-like" id="vd-like-btn" data-action="vd-like" title="Лайк">♥ Лайк</button>
+        <button class="var-btn var-btn-ban"  id="vd-ban-btn"  data-action="vd-ban"  title="Заблокировать">⊘ Забанить</button>
+      </div>
       <div class="detail-divider"></div>
       <div class="detail-section-label">// Оборудование</div>
       <div class="vd-equip-row" id="vd-equip"></div>
@@ -3348,6 +3376,9 @@ const Workout = {
         const varNum = topVarIdx + 1; /* Номер текущего варианта (1-based) */
         const card = document.createElement('div');
         card.className = 'now-card' + (isAlternative ? ' now-card--alt' : '');
+        card.dataset.action  = 'slot-start';
+        card.dataset.slot    = slotIdx;
+        card.dataset.varidx  = topVarIdx;
         card.innerHTML = `
           <div class="now-card-header">
             <span class="exercise-type-badge">${sl.type}</span>
@@ -3366,7 +3397,6 @@ const Workout = {
             </div>
           </div>
           <div class="now-actions">
-            <button class="btn btn-primary" data-action="slot-start" data-slot="${slotIdx}" data-varidx="${topVarIdx}">→ Начать</button>
             <button class="btn btn-ghost" data-action="slot-busy" data-slot="${slotIdx}">⊘ Занято</button>
             <button class="btn btn-ghost btn-variants" data-action="open-exercise" data-index="${slotIdx}" title="Все варианты / лайк / бан">≡ Варианты</button>
           </div>`;
@@ -3472,6 +3502,7 @@ const Workout = {
       varsEl.innerHTML = vars.map((v, i) => {
         const isBanned = App.isBanned(varKey, i);
         const isLiked  = App.isLiked(varKey, i);
+        const stars    = varPriority(i);
         return `
         <div class="variation-card${isBanned ? ' variation-card--banned' : ''}"
              ${isBanned ? '' : `data-action="open-variation" data-varkey="${varKey}" data-varidx="${i}"`}
@@ -3480,8 +3511,10 @@ const Workout = {
           <div class="variation-card-header">
             <span class="var-num">${String(i + 1).padStart(2, '0')}</span>
             <span class="var-name">${v.name}</span>
+            <span class="var-stars-sm">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>
           </div>
           <div class="var-equipment-row">${v.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+          <div class="var-card-thumb"><img src="data:," alt="${v.name}" data-fallback="exercise"></div>
           <div class="var-action-row">
             <button class="var-btn var-btn-like${isLiked ? ' active' : ''}"
                     data-action="like-variant" data-varkey="${varKey}" data-varidx="${i}"
@@ -3492,6 +3525,10 @@ const Workout = {
           </div>
         </div>`;
       }).join('');
+      /* Подгружаем картинки через ImgLoader (обход CSP и lazy-load) */
+      varsEl.querySelectorAll('.var-card-thumb img').forEach((img, i) => {
+        if (vars[i]) ImgLoader.setSrc(img, `assets/img/exercises/${vars[i].img}.png`, vars[i].name);
+      });
     } else {
       varsEl.innerHTML = '<div style="color:var(--text-dim);font-size:11px">—</div>';
     }
@@ -3555,6 +3592,14 @@ const Workout = {
     document.getElementById('vd-title').textContent = v.name;
     document.getElementById('vd-muscle').textContent = slotMuscle;
     document.getElementById('vd-priority').innerHTML = varPriorityHTML(varIdx);
+
+    /* ── Кнопки лайк / бан для текущего варианта ── */
+    const likeBtn = document.getElementById('vd-like-btn');
+    const banBtn  = document.getElementById('vd-ban-btn');
+    likeBtn.classList.toggle('active', App.isLiked(varKey, varIdx));
+    banBtn.classList.toggle('active',  App.isBanned(varKey, varIdx));
+    banBtn.textContent = App.isBanned(varKey, varIdx) ? '⊘ Разблокировать' : '⊘ Забанить';
+
     document.getElementById('vd-desc').textContent = v.desc || '—';
     document.getElementById('vd-equip').innerHTML = v.tags.map(t => `<span class="vd-equip-tag">${t}</span>`).join('');
 
@@ -3941,6 +3986,23 @@ document.getElementById('app').addEventListener('click', (e) => {
       delete App.persist.bannedVariants[bkey];
       App.save();
       UI.renderSettings();
+      break;
+    }
+
+    /* ── Лайк / бан из screen-variation ── */
+    case 'vd-like': {
+      const vk = App.state.currentVarKey, vi = App.state.currentVarIdx;
+      App.toggleLike(vk, vi);
+      document.getElementById('vd-like-btn').classList.toggle('active', App.isLiked(vk, vi));
+      break;
+    }
+    case 'vd-ban': {
+      const vk = App.state.currentVarKey, vi = App.state.currentVarIdx;
+      App.toggleBan(vk, vi);
+      const banned = App.isBanned(vk, vi);
+      const bb = document.getElementById('vd-ban-btn');
+      bb.classList.toggle('active', banned);
+      bb.textContent = banned ? '⊘ Разблокировать' : '⊘ Забанить';
       break;
     }
 
