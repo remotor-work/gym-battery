@@ -104,7 +104,7 @@ Create 1536 × 1024px image. BASE ON REFERENCE: Identical silhouette and anatomy
 - [x] **chest-flat-cable.png**
 Create 1536 × 1024px image. BASE ON REFERENCE: Identical silhouette and anatomy, same body proportions and style. Change ONLY exercise and body position. EXERCISE: Cable Chest Press - View: Side - Position: Lying on bench, pressing cable handles forward from chest level, cables visible from sides - Target muscle: Chest - Moment: Peak load (lockout). STYLE: High-end planar vector anatomy, geometric planes only, no shading, sharp transitions, mechanical surfaces, V-back, narrow waist, natural joints, symmetrical, functional, precise. COLORS: Background: #000000, Body: #252528, Outline: #3a3a42, Equipment: #505060, Load accent: #d97320 + #7a3e0e (pectoral area only). COMPOSITION: Centered figure, maximum negative space, minimal equipment. FORMAT: PNG, 1536 × 1024px.
 
-- [ ] **chest-flat-neutral.png**
+- [x] **chest-flat-neutral.png**
 Create 1536 × 1024px image. BASE ON REFERENCE: Identical silhouette and anatomy, same body proportions and style. Change ONLY exercise and body position. EXERCISE: Flat Dumbbell Press Neutral Grip - View: Side - Position: Lying on bench, pressing dumbbells with palms facing inward, neutral parallel grip - Target muscle: Chest - Moment: Peak load (lockout). STYLE: High-end planar vector anatomy, geometric planes only, no shading, sharp transitions, mechanical surfaces, V-back, narrow waist, natural joints, symmetrical, functional, precise. COLORS: Background: #000000, Body: #252528, Outline: #3a3a42, Equipment: #505060, Load accent: #d97320 + #7a3e0e (pectoral area only). COMPOSITION: Centered figure, maximum negative space, minimal equipment. FORMAT: PNG, 1536 × 1024px.
 
 - [ ] **chest-flat-converge.png**
@@ -114,7 +114,7 @@ Create 1536 × 1024px image. BASE ON REFERENCE: Identical silhouette and anatomy
 
 ### Грудь — жимы наклон вверх
 
-- [ ] **chest-incline-barbell.png**
+- [x] **chest-incline-barbell.png**
 Create 1536 × 1024px image. BASE ON REFERENCE: Identical silhouette and anatomy, same body proportions and style. Change ONLY exercise and body position. EXERCISE: Incline Barbell Bench Press - View: Side - Position: On 30–45° incline, pressing barbell upward from collarbone - Target muscle: Upper chest - Moment: Peak load (lockout). STYLE: High-end planar vector anatomy, geometric planes only, no shading, sharp transitions, mechanical surfaces, V-back, narrow waist, natural joints, symmetrical, functional, precise. COLORS: Background: #000000, Body: #252528, Outline: #3a3a42, Equipment: #505060, Load accent: #d97320 + #7a3e0e (upper pectoral area only). COMPOSITION: Centered figure, maximum negative space, minimal equipment. FORMAT: PNG, 1536 × 1024px.
 
 - [ ] **chest-incline-dumbbell.png**
