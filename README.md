@@ -24,7 +24,7 @@ You choose what's available *right now*. The app remembers what you did and keep
 ## Key Features
 
 - **Exercise variability** — 4–7 alternatives per movement, grouped by muscle group and equipment
-- **PPL split structure** — 4 training days (Push A / Pull A / Legs / Push B+Pull B)
+- **Upper/Lower split** — 4 training days (Upper A / Lower A / Upper B / Lower B)
 - **Flexible scheduling** — training days are not tied to specific weekdays; train on your own rhythm
 - **Set tracking** — log weight and reps for each set, with auto-filled suggestions from last session
 - **Rest timer** — configurable countdown between sets
