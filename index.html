@@ -1821,6 +1821,7 @@ html, body {
       <div class="detail-divider"></div>
       <div class="detail-section-label">// Оборудование</div>
       <div class="vd-equip-row" id="vd-equip"></div>
+      <div id="vd-heat-bar"></div>
 
       <!-- ИЛЛЮСТРАЦИЯ: техника выполнения варианта (крупная)
            Путь к файлу формируется динамически из JS:
@@ -3798,6 +3799,7 @@ const Workout = {
 
     document.getElementById('vd-desc').textContent = v.desc || '—';
     document.getElementById('vd-equip').innerHTML = v.tags.map(t => `<span class="vd-equip-tag">${t}</span>`).join('');
+    document.getElementById('vd-heat-bar').innerHTML = App.heatBarHTML(v.img, false);
 
     /* ── Обновляем иллюстрацию техники ── */
     /* Имя файла берётся из поля img варианта упражнения.
