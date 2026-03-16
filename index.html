@@ -417,8 +417,9 @@ html, body {
 /* ══════════════════════════════════════════════════════════════════
    HOME SCREEN — Главный экран
    ────────────────────────────
-   Отображает сетку из 4 тренировочных дней (2 колонки × 2 строки).
-   Каждый день — карточка-батарейка (.day-card).
+   4 дня, каждый — отдельная строка на всю ширину.
+   Форма: лежачая батарейка (АА-аккумулятор).
+   Заливка прогресса идёт слева направо.
    ══════════════════════════════════════════════════════════════════ */
 #screen-home .scroll-body { padding: 16px; }
 
@@ -433,8 +434,8 @@ html, body {
   margin-bottom: 13px;
 }
 
-/* Сетка карточек дней: 2 колонки */
-.day-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+/* Колонка: каждый день — отдельная строка */
+.day-grid { display: flex; flex-direction: column; gap: 10px; }
 
 /* ── WEEK BAR — Строка прогресса недели ──
    Показывает "X / Y тренировок" + кнопку сброса.
@@ -478,149 +479,169 @@ html, body {
 .week-btn.danger:active { background: rgba(231,76,60,0.1); color: var(--red); }
 
 /* ══════════════════════════════════════════════════════════════════
-   DAY CARD — Карточка тренировочного дня
-   ──────────────────────────────────────
-   Визуализирует один день как мини-батарейку.
+   DAY CARD — Карточка-батарейка (горизонтальная, АА-стиль)
+   ──────────────────────────────────────────────────────────
+   Форма: лежачий аккумулятор. Тело + терминал (плюс) справа.
+   Заливка прогресса: слева направо.
 
-   Состояния (CSS-классы):
-   • .available — доступна для запуска (оранжевая граница)
-   • .partial   — частично завершена (показывает % прогресса)
-   • .done      — 100% завершена (заливка, свечение)
-   • .inactive  — день отдыха (серая, некликабельная)
-
-   Структура карточки:
-   ┌─────────────────────┐  ← .day-card::before (контакт)
-   │ Д1                  │  ← .day-label
-   │ ДЕНЬ 1              │  ← .day-name
-   │                     │
-   │ ║████████░░░░░░░║   │  ← .day-mini-bat (мини-батарейка)
-   │ ВЕРХ А · 6 упр.     │  ← .day-workout-label
-   │█████████████████████│  ← .day-fill (фоновая заливка при done)
-   └─────────────────────┘
+   ┌────────────────────────────────────────────┐ ┤
+   │ Д1  ВЕРХ · День 1          □□□□□□□□   67% │ │ ← терминал
+   │     Жимы, плечи, трицепс                  │ │
+   │     [████████████████░░░░░░░░░░░]          │ ┤
+   └────────────────────────────────────────────┘
    ══════════════════════════════════════════════════════════════════ */
+
+/* Обёртка нужна чтобы терминал (::after) не обрезался overflow:hidden */
+.day-card-wrap {
+  position: relative;
+  /* правый отступ под терминал */
+  padding-right: 11px;
+}
+
 .day-card {
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 14px 13px 12px;
+  border: 2px solid var(--border2);
+  border-radius: 12px 5px 5px 12px;
+  padding: 14px 16px 12px;
   cursor: pointer;
   position: relative;
-  overflow: visible;
-  transition: border-color 0.18s, background 0.18s, transform 0.1s;
-  min-height: 130px;
-  display: flex; flex-direction: column; justify-content: space-between;
+  overflow: hidden;
+  transition: border-color 0.18s, background 0.18s, transform 0.12s;
+  min-height: 80px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
   background: var(--bg2);
 }
-.day-card:active { transform: scale(0.97); }
+.day-card:active { transform: scale(0.98); }
 
-/* ── Состояния карточки ── */
+/* Терминал (плюсовой контакт батарейки) — справа в обёртке */
+.day-card-wrap::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 28px;
+  background: var(--border2);
+  border-radius: 0 5px 5px 0;
+  transition: background 0.2s;
+}
+
+/* ── Состояния ── */
 .day-card.available { border-color: var(--border2); }
 .day-card.available:active { border-color: var(--led-dim); background: var(--bg3); }
 .day-card.partial { border-color: var(--led-dim); }
-.day-card.partial::before { background: var(--led-dim); }
-.day-card.partial .day-label { color: var(--led); opacity: 0.85; }
-.day-card.partial .day-mini-bat-fill { width: var(--partial-pct, 0%); }
-.day-card.partial .day-workout-label { color: var(--led); opacity: 0.7; }
 .day-card.partial:active { background: var(--bg3); }
-.day-card.done { border-color: var(--led-dim); }
-.day-card.inactive { border-color: var(--border); opacity: 0.25; cursor: default; background: transparent; }
+.day-card.done { border-color: var(--led); }
+.day-card-wrap.state-done::after { background: var(--led); }
+.day-card-wrap.state-partial::after { background: var(--led-dim); }
+.day-card.inactive { border-color: var(--border); opacity: 0.3; cursor: default; background: transparent; }
+.day-card-wrap.state-inactive::after { background: var(--border); opacity: 0.3; }
 
-/* Контакт батарейки (верхний выступ карточки) */
-.day-card::before {
-  content: '';
-  position: absolute;
-  top: -5px; left: 50%; transform: translateX(-50%);
-  width: 18px; height: 5px;
-  background: var(--border2);
-  border-radius: 3px 3px 0 0;
-  transition: background 0.2s;
-}
-.day-card.done::before { background: var(--led-dim); }
-.day-card.inactive::before { background: var(--border); }
-
-/* Фоновая заливка при завершении (растёт снизу вверх) */
+/* Заливка прогресса — слева направо (как заряд батарейки) */
 .day-fill {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  border-radius: 0 0 calc(var(--r) - 1px) calc(var(--r) - 1px);
+  top: 0; left: 0; bottom: 0;
+  width: 0%;
   background: transparent;
-  transition: height 0.5s cubic-bezier(0.4,0,0.2,1), background 0.3s;
-  height: 0;
+  transition: width 0.7s cubic-bezier(0.4,0,0.2,1), background 0.3s;
   pointer-events: none;
   z-index: 0;
+  border-radius: 10px 0 0 10px;
 }
 .day-card.done .day-fill {
-  height: 100%;
-  border-radius: calc(var(--r) - 1px);
-  /* Полосатый оранжевый фон — имитация LED */
+  width: 100%;
+  border-radius: 10px 3px 3px 10px;
   background: repeating-linear-gradient(
     90deg,
-    rgba(217,115,32,0.18) 0px, rgba(217,115,32,0.18) 3px,
-    rgba(217,115,32,0.07) 3px, rgba(217,115,32,0.07) 8px
+    rgba(217,115,32,0.16) 0px, rgba(217,115,32,0.16) 3px,
+    rgba(217,115,32,0.06) 3px, rgba(217,115,32,0.06) 8px
   );
-  box-shadow: inset 0 0 20px rgba(217,115,32,0.08);
 }
-/* Контент карточки поверх заливки */
+.day-card.partial .day-fill {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(217,115,32,0.12) 0px, rgba(217,115,32,0.12) 3px,
+    rgba(217,115,32,0.04) 3px, rgba(217,115,32,0.04) 8px
+  );
+}
+
+/* Контент поверх заливки */
 .day-card > *:not(.day-fill) { position: relative; z-index: 1; }
 
-/* Название дня (крупное: Д1, Д2, ...) */
-.day-card .day-label {
-  font-family: var(--orb); font-size: 22px; font-weight: 700;
-  letter-spacing: 0.02em; color: var(--white); line-height: 1;
+/* ── Левый блок: номер дня ── */
+.day-card-left {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
 }
-.day-card.done .day-label { color: var(--led); text-shadow: 0 0 12px rgba(217,115,32,0.4); }
+.day-label {
+  font-family: var(--orb); font-size: 26px; font-weight: 800;
+  color: var(--white); line-height: 1; letter-spacing: -0.01em;
+}
+.day-card.done .day-label { color: var(--led); text-shadow: 0 0 16px rgba(217,115,32,0.5); }
 .day-card.inactive .day-label { color: var(--text-dim); }
 
-/* Полное название дня (мелкое: ДЕНЬ 1) */
-.day-card .day-name {
-  font-family: var(--exo); font-size: 9px; font-weight: 600;
-  letter-spacing: 0.14em; color: var(--text2); text-transform: uppercase; margin-top: 3px;
+/* ── Центральный блок: инфо ── */
+.day-card-center {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 4px;
 }
-
-.day-card .day-description {
-  font-family: var(--exo); font-size: 8px; font-weight: 400;
-  letter-spacing: 0.05em; color: var(--text-dim); margin-top: 4px; line-height: 1.25;
-  max-width: 160px;
+.day-card-title {
+  font-family: var(--orb); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--text); text-transform: uppercase;
 }
-
-/* Мини-батарейка внутри карточки */
-.day-mini-bat { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
-.day-mini-bat-outer {
-  position: relative;
-  height: 10px;
-  border: 1px solid var(--border2);
+.day-card.done .day-card-title { color: var(--led); }
+.day-card.inactive .day-card-title { color: var(--text-dim); }
+.day-card-muscles {
+  font-family: var(--exo); font-size: 10px; font-weight: 400;
+  color: var(--text-dim); line-height: 1.4;
+}
+/* Полоска заряда — горизонтальная внутри центрального блока */
+.day-charge-bar {
+  margin-top: 6px;
+  height: 6px;
   border-radius: 3px;
   background: var(--bg);
+  border: 1px solid var(--border);
   overflow: hidden;
+  position: relative;
 }
-.day-card.done .day-mini-bat-outer { border-color: var(--led-dim); }
-.day-card.inactive .day-mini-bat-outer { border-color: var(--border); }
-.day-mini-bat-fill {
+.day-charge-fill {
   height: 100%;
-  width: 0%;
   background: repeating-linear-gradient(
     90deg,
     var(--led) 0px, var(--led) 3px,
-    rgba(217,115,32,0.35) 3px, rgba(217,115,32,0.35) 6px
+    rgba(217,115,32,0.4) 3px, rgba(217,115,32,0.4) 6px
   );
   border-radius: 2px;
-  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
-  box-shadow: 0 0 6px rgba(217,115,32,0.3);
+  transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 0 6px rgba(217,115,32,0.35);
+  width: 0%;
 }
-.day-card.done .day-mini-bat-fill { width: 100%; }
-.day-card.inactive .day-mini-bat-fill { display: none; }
+.day-card.inactive .day-charge-bar { display: none; }
 
-/* Текст под мини-батарейкой: название программы + статус */
-.day-workout-label {
-  font-family: var(--exo); font-size: 10px; font-weight: 600;
-  letter-spacing: 0.04em; color: var(--text); line-height: 1.35;
+/* ── Правый блок: статус/процент ── */
+.day-card-right {
+  flex-shrink: 0;
+  text-align: right;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
 }
-.day-card.available .day-workout-label { color: var(--led); opacity: 0.9; }
-.day-card.done .day-workout-label { color: var(--led); opacity: 0.7; }
-.day-count {
-  display: block; font-family: var(--orb); font-size: 8px;
-  color: var(--text-dim); margin-top: 2px; letter-spacing: 0.12em; font-weight: 500;
+.day-status-pct {
+  font-family: var(--orb); font-size: 16px; font-weight: 700;
+  color: var(--text-dim); letter-spacing: 0.02em;
 }
-.day-card.done .day-count { color: var(--led-dim); }
+.day-card.done .day-status-pct { color: var(--led); text-shadow: 0 0 10px rgba(217,115,32,0.4); }
+.day-card.partial .day-status-pct { color: var(--led); opacity: 0.8; }
+.day-status-label {
+  font-family: var(--exo); font-size: 9px; font-weight: 600;
+  color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
+}
 
 /* ══════════════════════════════════════════════════════════════════
    WORKOUT LIST — Список упражнений в тренировке
@@ -785,6 +806,40 @@ html, body {
   font-family: var(--exo); font-size: 9px; font-weight: 700;
   letter-spacing: 0.1em; color: #c45c5c; text-transform: uppercase;
   background: rgba(196,92,92,0.1); padding: 1px 5px; border-radius: 3px;
+}
+
+/* АЛЬТЕРНАТИВНЫЕ ВАРИАНТЫ — компактные карточки под основным */
+.alt-variants-section { margin-top: 6px; }
+.alt-variants-label {
+  font-family: var(--orb); font-size: 8px; letter-spacing: 0.2em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;
+}
+.alt-variant-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s, border-color 0.15s;
+  background: transparent;
+}
+.alt-variant-card:active { opacity: 0.8; border-color: var(--led-dim); }
+.alt-variant-thumb {
+  width: 40px; height: 40px; border-radius: 6px;
+  object-fit: cover; background: var(--bg3); flex-shrink: 0;
+}
+.alt-variant-info { flex: 1; min-width: 0; }
+.alt-variant-name {
+  font-family: var(--exo); font-size: 12px; font-weight: 600;
+  color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.alt-variant-tags {
+  font-family: var(--exo); font-size: 9px; color: var(--text-dim); margin-top: 2px;
+}
+.alt-variant-arrow {
+  font-size: 14px; color: var(--text-dim); flex-shrink: 0;
 }
 
 /* ВЫПОЛНЕНО */
@@ -1054,6 +1109,13 @@ html, body {
   font-family: var(--exo); font-size: 10px; color: var(--text-dim);
   text-align: center; letter-spacing: 0.05em; margin-top: 6px;
 }
+.btn-force-complete {
+  display: block; width: 100%; margin-top: 10px;
+  font-family: var(--exo); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--led); border-color: var(--led-dim);
+  padding: 10px;
+}
 
 /* ══════════════════════════════════════════════════════════════════
    SET INPUTS — Поля ввода веса и повторений
@@ -1111,30 +1173,30 @@ html, body {
    ══════════════════════════════════════════════════════════════════ */
 .rest-timer-overlay {
   display: none;
-  position: absolute;
-  inset: 0;
-  background: rgba(22,22,24,0.92);  /* Полупрозрачный тёмный фон */
+  position: fixed;
+  bottom: 20px; right: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--led-dim);
+  border-radius: 14px;
+  padding: 10px 14px;
   z-index: 100;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  animation: fadeIn 0.3s ease;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  animation: timerSlideUp 0.25s ease;
 }
 .rest-timer-overlay.visible { display: flex; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes timerSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.rest-timer-label {
-  font-family: var(--orb); font-size: 8px; letter-spacing: 0.3em;
-  color: var(--text-dim); text-transform: uppercase;
-}
+.rest-timer-label { display: none; }
 .rest-timer-value {
   font-family: var(--orb); font-size: 56px; font-weight: 900;
   color: var(--led); letter-spacing: 0.05em;
   text-shadow: 0 0 30px rgba(217,115,32,0.5);
 }
 .rest-timer-ring {
-  width: 160px; height: 160px;
+  width: 50px; height: 50px;
   position: relative;
 }
 .rest-timer-ring svg {
@@ -1163,20 +1225,20 @@ html, body {
   align-items: center;
   justify-content: center;
   font-family: var(--orb);
-  font-size: 38px;
+  font-size: 18px;
   font-weight: 900;
   color: var(--led);
-  text-shadow: 0 0 20px rgba(217,115,32,0.4);
+  text-shadow: 0 0 10px rgba(217,115,32,0.4);
 }
 
 /* Кнопка «Пропустить» таймер */
 .rest-skip-btn {
   font-family: var(--exo); font-size: 10px; font-weight: 500;
-  letter-spacing: 0.1em; text-transform: uppercase;
+  letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-dim); background: none;
   border: 1px solid var(--border2); border-radius: var(--r2);
-  padding: 10px 24px; cursor: pointer;
-  transition: all 0.15s; margin-top: 6px;
+  padding: 6px 12px; cursor: pointer;
+  transition: all 0.15s; margin-top: 0;
 }
 .rest-skip-btn:active { background: var(--bg3); color: var(--text2); }
 
@@ -1771,6 +1833,8 @@ html, body {
       <!-- Кнопки подходов рендерятся из JS: Workout.openVariation() -->
       <div class="sets-row" id="sets-row"></div>
       <div class="sets-hint" id="sets-hint">Выполни все подходы</div>
+      <button class="btn btn-ghost btn-force-complete" id="btn-force-complete"
+              data-action="force-complete" style="display:none">✓ Выполнено</button>
       <!-- Поля ввода веса/повторений рендерятся из JS -->
       <div class="set-inputs" id="set-inputs"></div>
       <div class="detail-divider" style="margin-top:16px"></div>
@@ -1782,23 +1846,6 @@ html, body {
       <button class="btn btn-full btn-big-ghost" id="btn-back-to-variants">← Вернуться к вариантам</button>
     </div>
 
-    <!-- ── REST TIMER OVERLAY ──
-         Появляется поверх screen-variation после нажатия подхода.
-         Содержит SVG-кольцо с обратным отсчётом.
-         Управляется: Workout.startRestTimer() / stopRestTimer() -->
-    <div class="rest-timer-overlay" id="rest-timer">
-      <div class="rest-timer-label">Отдых между подходами</div>
-      <div class="rest-timer-ring">
-        <!-- SVG кольцо: viewBox 160×160, два circle: фон (ring-bg) и прогресс (ring-fg) -->
-        <svg viewBox="0 0 160 160">
-          <circle class="ring-bg" />
-          <circle class="ring-fg" id="timer-ring-fg" />
-        </svg>
-        <!-- Текст по центру кольца (секунды) -->
-        <div class="timer-text" id="timer-text">90</div>
-      </div>
-      <button class="rest-skip-btn" id="btn-skip-timer">Пропустить →</button>
-    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
@@ -1920,6 +1967,18 @@ html, body {
       <button class="btn btn-primary" id="dialog-confirm">Да</button>
     </div>
   </div>
+</div>
+
+<!-- REST TIMER — компактный виджет, вне .screen чтобы position:fixed работал -->
+<div class="rest-timer-overlay" id="rest-timer">
+  <div class="rest-timer-ring">
+    <svg viewBox="0 0 160 160">
+      <circle class="ring-bg" />
+      <circle class="ring-fg" id="timer-ring-fg" />
+    </svg>
+    <div class="timer-text" id="timer-text">90</div>
+  </div>
+  <button class="rest-skip-btn" id="btn-skip-timer">Пропустить ×</button>
 </div>
 
 <script>
@@ -2984,59 +3043,67 @@ const UI = {
     DAYS_ORDER.forEach(day => {
       const data = workoutSchedule[day];
       const isDone = !!App.persist.doneDays[day];
-      const isActive = !!data;   /* все 4 дня активны, null невозможен */
+      const isActive = !!data;
       const partial = App.persist.progress[day];
 
-      const card = document.createElement('div');
-      /* ARIA-атрибуты для доступности */
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', isActive && !isDone ? '0' : '-1');
-      card.setAttribute('aria-label', `${dayFullNames[day]} — ${isDone ? 'Завершено' : isActive ? data.name : 'Отдых'}`);
-
-      /* Определяем CSS-класс состояния */
-      let className = 'day-card ';
-      if (!isActive) className += 'inactive';
-      else if (isDone) className += 'done';
-      else if (partial) className += 'partial';
-      else className += 'available';
-      card.className = className;
-
-      /* Определяем данные для отображения */
-      let fillPct = 0, restLabel, countHtml = '';
+      /* Прогресс */
+      let fillPct = 0, statusPct = '', statusLabel = '';
       if (isDone) {
-        fillPct = 100; restLabel = 'ЗАРЯЖЕНА';
-        countHtml = '<span class="day-count">100%</span>';
+        fillPct = 100; statusPct = '100%'; statusLabel = 'ЗАРЯЖЕНА';
       } else if (partial) {
-        /* Считаем прогресс из slots (новый формат) или из completedCount (старый) */
         const doneCount = partial.slots
           ? partial.slots.filter(sl => sl.done).length
           : (partial.completedCount || 0);
         const totalCount = partial.slots
           ? partial.slots.length
-          : (partial.totalExercises || workoutSchedule[day].exercises.length);
+          : (partial.totalExercises || data.exercises.length);
         fillPct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
-        restLabel = data.name;
-        countHtml = `<span class="day-count">${fillPct}% · продолжить</span>`;
+        statusPct = fillPct + '%'; statusLabel = 'продолжить';
       } else if (isActive) {
-        fillPct = 0; restLabel = data.name;
-        countHtml = `<span class="day-count">${data.exercises.length} упр.</span>`;
+        statusPct = data.exercises.length + ' упр'; statusLabel = 'начать';
       } else {
-        restLabel = '// ОТДЫХ';
+        statusPct = '—'; statusLabel = 'отдых';
       }
 
+      /* Мышцы из описания */
+      const musclesText = dayDescriptions[day] || data.full || '';
+
+      /* Состояние карточки */
+      let cardState = isActive ? (isDone ? 'done' : partial ? 'partial' : 'available') : 'inactive';
+      const wrapStateClass = `state-${cardState}`;
+
+      /* Обёртка с терминалом */
+      const wrap = document.createElement('div');
+      wrap.className = `day-card-wrap ${wrapStateClass}`;
+
+      const card = document.createElement('div');
+      card.className = `day-card ${cardState}`;
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', isActive && !isDone ? '0' : '-1');
+      card.setAttribute('aria-label', `${dayFullNames[day]} — ${statusLabel}`);
+
       card.innerHTML = `
-        <div class="day-fill"></div>
-        <div><div class="day-name">${dayFullNames[day]}</div><div class="day-description">${dayDescriptions[day] || ''}</div></div>
-        <div class="day-mini-bat">
-          <div class="day-mini-bat-outer"><div class="day-mini-bat-fill" style="width:${fillPct}%"></div></div>
-          <div class="day-workout-label">${restLabel}${countHtml}</div>
+        <div class="day-fill" style="width:${fillPct}%"></div>
+        <div class="day-card-left">
+          <div class="day-label">${day}</div>
+        </div>
+        <div class="day-card-center">
+          <div class="day-card-title">${dayFullNames[day].toUpperCase()}</div>
+          <div class="day-card-muscles">${musclesText}</div>
+          <div class="day-charge-bar">
+            <div class="day-charge-fill" style="width:${fillPct}%"></div>
+          </div>
+        </div>
+        <div class="day-card-right">
+          <div class="day-status-pct">${statusPct}</div>
+          <div class="day-status-label">${statusLabel}</div>
         </div>`;
 
-      /* Клик — запуск тренировки (только для активных незавершённых дней) */
       if (isActive && !isDone) {
         card.addEventListener('click', () => Workout.start(day));
       }
-      grid.appendChild(card);
+      wrap.appendChild(card);
+      grid.appendChild(wrap);
     });
   },
 
@@ -3460,11 +3527,39 @@ const Workout = {
           </div>
           <div class="now-actions">
             <button class="btn btn-ghost" data-action="slot-busy" data-slot="${slotIdx}">⊘ Занято</button>
-            <button class="btn btn-ghost btn-variants" data-action="open-exercise" data-index="${slotIdx}" title="Все варианты / лайк / бан">≡ Варианты</button>
           </div>`;
         z1.appendChild(card);
         ImgLoader.setSrc(card.querySelector('.now-card-thumb img'),
           `assets/img/exercises/${variant.img}.png`, variant.name);
+
+        /* ── Альтернативные варианты (остальные из varQueue) ── */
+        if (sl.varQueue.length > 1) {
+          const altSection = document.createElement('div');
+          altSection.className = 'alt-variants-section';
+          altSection.innerHTML = '<div class="alt-variants-label">// Другие варианты</div>';
+          for (let qi = 1; qi < sl.varQueue.length; qi++) {
+            const altIdx = sl.varQueue[qi];
+            const altVar = (exerciseVariations[varKey] || [])[altIdx];
+            if (!altVar) continue;
+            const altCard = document.createElement('div');
+            altCard.className = 'alt-variant-card';
+            altCard.dataset.action = 'slot-start';
+            altCard.dataset.slot = slotIdx;
+            altCard.dataset.varidx = altIdx;
+            altCard.innerHTML = `
+              <img class="alt-variant-thumb" src="data:," alt="${altVar.name}" data-fallback="exercise">
+              <div class="alt-variant-info">
+                <div class="alt-variant-name">${altVar.name}</div>
+                <div class="alt-variant-tags">${altVar.tags.join(' · ')}</div>
+              </div>
+              <span class="alt-variant-arrow">›</span>`;
+            altSection.appendChild(altCard);
+            ImgLoader.setSrc(altCard.querySelector('.alt-variant-thumb'),
+              `assets/img/exercises/${altVar.img}.png`, altVar.name);
+          }
+          z1.appendChild(altSection);
+        }
+
         list.appendChild(z1);
       }
     }
@@ -3693,6 +3788,11 @@ const Workout = {
     } else {
       hintEl.textContent = `Выполни все ${setsCount} подхода`;
     }
+
+    /* Показываем кнопку «Выполнено» (для случаев когда забыл нажимать подходы) */
+    const forceBtn = document.getElementById('btn-force-complete');
+    if (forceBtn) forceBtn.style.display = 'block';
+
     UI.showScreen('screen-variation');
   },
 
@@ -3756,6 +3856,28 @@ const Workout = {
       /* Автозавершение через 750ms */
       setTimeout(() => this.completeExercise(), 750);
     }
+  },
+
+  /**
+   * Принудительное завершение упражнения — для случаев когда забыл нажимать подходы.
+   * Заполняет все невыполненные подходы текущими значениями weight/reps.
+   */
+  forceComplete() {
+    const s = App.state;
+    const setsCount = App.persist.settings.setsCount;
+    const weight = parseFloat(document.getElementById('input-weight').value) || 0;
+    const reps = parseInt(document.getElementById('input-reps').value) || 0;
+
+    for (let i = 0; i < setsCount; i++) {
+      const btn = document.getElementById('set-' + i);
+      if (btn && !btn.classList.contains('done')) {
+        s.setData[i] = { weight, reps };
+        btn.classList.add('done');
+        s.setsCompleted++;
+      }
+    }
+    this.stopRestTimer();
+    this.completeExercise();
   },
 
   /* ════════════════════════════════════
@@ -4172,6 +4294,11 @@ document.getElementById('app').addEventListener('click', (e) => {
       Workout.tapSet(parseInt(target.dataset.set));
       break;
 
+    /* ── Принудительное завершение упражнения ── */
+    case 'force-complete':
+      Workout.forceComplete();
+      break;
+
     /* ── Настройки: подходы ± ── */
     case 'sets-minus': {
       const s = App.persist.settings;
@@ -4358,5 +4485,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
 </body>
 </html>
