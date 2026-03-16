@@ -1039,6 +1039,22 @@ html, body {
   padding: 3px 8px; line-height: 1.4;
 }
 
+/* ── HEAT BAR — полоска активности (красная → зелёная) ── */
+.var-heat-row {
+  display: flex; align-items: center; gap: 7px;
+  padding-left: 25px; margin: 5px 0 0;
+}
+.var-heat-label {
+  font-family: var(--orb); font-size: 8px; color: var(--text-dim);
+  letter-spacing: 0.08em; flex-shrink: 0; width: 52px;
+}
+.var-heat-track {
+  flex: 1; height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden;
+}
+.var-heat-fill {
+  height: 100%; border-radius: 2px; transition: width 0.5s ease;
+}
+
 /* ── VARIATION DETAIL — Экран выполнения подходов ── */
 .vd-desc {
   font-family: var(--exo); font-size: 13px; font-weight: 400; line-height: 1.65;
@@ -2277,7 +2293,8 @@ const exerciseVariations = {
     { img:"chest-flat-machine",    name:"Тренажёр грудной жим (Chest Press Machine)", tags:["Тренажёр chest-press","Регулируемое сиденье"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Сиденье: рукояти на уровне нижней части груди. Спина прижата. Жми вперёд, не блокируя локти. Медленно возвращай." },
     { img:"chest-flat-cable",      name:"Кроссовер стоя (Standing Cable Chest Press)", tags:["Кабельный кроссовер","D-рукояти на уровне груди"], muscles:"Грудные (основная), передние дельты", desc:"Блоки на уровне груди. Шаг вперёд, ноги устойчиво. Жми обеими руками вперёд, сводя перед грудью. Медленно возвращай." },
     { img:"chest-flat-converge",   name:"Тренажёр со сходящимися рычагами (Converging Chest Press Machine)", tags:["Тренажёр Life Fitness / Cybex","Регулируемое сиденье"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Сиденье: рукояти на уровне нижней части груди. Жми вперёд — рычаги сходятся к центру. Задержись в конечной точке. Медленно возвращай." },
-    { img:"chest-flat-neutral",    name:"Тренажёр с нейтральным хватом (Neutral Grip Chest Press Machine)", tags:["Selectorized chest press","Параллельные рукояти"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Сиденье: рукояти на уровне нижней части груди. Нейтральный хват (ладони друг к другу). Жми вперёд до почти полного разгибания. Медленно возвращай." }
+    { img:"chest-flat-neutral",    name:"Тренажёр с нейтральным хватом (Neutral Grip Chest Press Machine)", tags:["Selectorized chest press","Параллельные рукояти"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Сиденье: рукояти на уровне нижней части груди. Нейтральный хват (ладони друг к другу). Жми вперёд до почти полного разгибания. Медленно возвращай." },
+    { img:"chest-flat-hammer",     name:"Hammer Strength — горизонтальный жим (ISO-Lateral Chest Press)", tags:["Hammer Strength","Блины","Независимые рычаги"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Навесь блины. Сядь, спина прижата. Рукояти на уровне нижней части груди. Каждый рычаг движется независимо — помогает выровнять силовой дисбаланс. Жми вперёд до почти полного разгибания. Задержись 1 сек. Медленно возвращай." }
   ],
   "Д1-3":[
     { img:"chest-incline-barbell",      name:"Штанга на наклонной скамье 30–45° (Incline Bench Press)", tags:["Гриф + блины","Наклонная скамья","Силовые стойки"], muscles:"Верхние (ключичные) пучки грудных (основная), передние дельты, трицепс", desc:"Скамья 30–45°. Хват шире плеч. Опускай к верхней части груди/ключицам. Жми вверх. Чем выше угол — тем больше нагрузка на передние дельты." },
@@ -2644,6 +2661,8 @@ const App = {
     },
     bannedVariants: {},  // { "Д1-1:2": true, ... }
     likedVariants:  {},  // { "Д1-1:0": true, ... }
+    exerciseHeat:   {},  // { "chest-flat-barbell": 7, ... } — 0..10, горячесть упражнения
+    lastDecayMonth: null,// "2026-03" — последний месяц применения decay
   },
 
   /**
@@ -2672,11 +2691,14 @@ const App = {
         if (data.settings)  this.persist.settings  = { ...this.persist.settings, ...data.settings };
         if (data.bannedVariants) this.persist.bannedVariants = data.bannedVariants;
         if (data.likedVariants)  this.persist.likedVariants  = data.likedVariants;
+        if (data.exerciseHeat)   this.persist.exerciseHeat   = data.exerciseHeat;
+        if (data.lastDecayMonth) this.persist.lastDecayMonth = data.lastDecayMonth;
       }
     } catch(e) {
       /* localStorage недоступен — работаем без персистенции */
     }
     this.checkWeekReset();
+    this.checkHeatDecay();
   },
 
   /**
@@ -2760,6 +2782,36 @@ const App = {
     }
     this.persist.weekStart = currentMonday;
     this.save();
+  },
+
+  /**
+   * Ежемесячный decay горячести упражнений.
+   * Раз в месяц уменьшает каждое значение exerciseHeat на 1 (до 0).
+   * Это делает «горячесть» актуальной: редко используемые упражнения
+   * постепенно краснеют.
+   */
+  checkHeatDecay() {
+    const now = new Date();
+    const m = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    if (!this.persist.lastDecayMonth) {
+      this.persist.lastDecayMonth = m;
+      this.save();
+      return;
+    }
+    if (this.persist.lastDecayMonth < m) {
+      Object.keys(this.persist.exerciseHeat).forEach(k => {
+        const v = this.persist.exerciseHeat[k];
+        if (v > 0) this.persist.exerciseHeat[k] = v - 1;
+      });
+      this.persist.lastDecayMonth = m;
+      this.save();
+    }
+  },
+
+  /* Вспомогательные геттеры горячести */
+  getHeat(imgSlug) { return this.persist.exerciseHeat[imgSlug] || 0; },
+  addHeat(imgSlug) {
+    this.persist.exerciseHeat[imgSlug] = Math.min(10, this.getHeat(imgSlug) + 1);
   },
 
   /**
@@ -3627,6 +3679,13 @@ const Workout = {
         const isBanned = App.isBanned(varKey, i);
         const isLiked  = App.isLiked(varKey, i);
         const stars    = varPriority(i);
+        const heat     = App.getHeat(v.img);                // 0–10
+        const heatPct  = heat * 10;                         // 0–100%
+        const heatColor = heat === 0 ? 'transparent'
+          : heat <= 3 ? '#e53935'
+          : heat <= 6 ? '#ff9800'
+          : heat <= 8 ? '#8bc34a'
+          : '#00e676';
         return `
         <div class="variation-card${isBanned ? ' variation-card--banned' : ''}"
              ${isBanned ? '' : `data-action="open-variation" data-varkey="${varKey}" data-varidx="${i}"`}
@@ -3638,6 +3697,12 @@ const Workout = {
             <span class="var-stars-sm">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>
           </div>
           <div class="var-equipment-row">${v.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+          <div class="var-heat-row">
+            <span class="var-heat-label">АКТИВНОСТЬ</span>
+            <div class="var-heat-track">
+              <div class="var-heat-fill" style="width:${heatPct}%;background:${heatColor}"></div>
+            </div>
+          </div>
           <div class="var-card-thumb"><img src="data:," alt="${v.name}" data-fallback="exercise"></div>
           <div class="var-action-row">
             <button class="var-btn var-btn-like${isLiked ? ' active' : ''}"
@@ -4004,6 +4069,11 @@ const Workout = {
     slot.done = true;
     slot.doneVarIdx = s.currentVarIdx;
     slot.busy = []; // снимаем все "занято" для этого слота
+
+    /* Увеличиваем горячесть выбранного варианта */
+    const _varKey = s.currentDay + '-' + slot.id;
+    const _doneVar = (exerciseVariations[_varKey] || [])[s.currentVarIdx];
+    if (_doneVar) App.addHeat(_doneVar.img);
 
     if (!App.persist.progress[s.currentDay]) {
       App.persist.progress[s.currentDay] = { completedExercises: [] };
