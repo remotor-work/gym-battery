@@ -33,12 +33,12 @@
   ║   • CSS Custom Properties (переменные) для темизации                        ║
   ║   • Шрифты: Orbitron (заголовки, цифры), Exo 2 (основной текст)            ║
   ║                                                                             ║
-  ║   Навигация по экранам (SPA — три зоны):                                    ║
+  ║   Навигация по экранам (SPA):                                               ║
   ║                                                                             ║
-  ║   screen-home ──→ screen-workout (три зоны) ──→ screen-variation           ║
-  ║       │          ДЕЛАЙ СЕЙЧАС / ПРОВЕРЬ /           (ПОДХОДЫ)              ║
-  ║       │          ВЫПОЛНЕНО                               │                  ║
-  ║       │                ↑←←←←←←←←←←←←←←←←←←←←←←←←←←←←←┘                  ║
+  ║   screen-home ──→ screen-muscles ──→ screen-workout ──→ screen-variation  ║
+  ║       │          (6 мышечных групп) (1 слот: делай/     (ПОДХОДЫ)          ║
+  ║       │                              проверь)                │              ║
+  ║       │                ↑←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←┘              ║
   ║       │                                                                     ║
   ║       ├──→ screen-stats (Статистика и история)                             ║
   ║       └──→ screen-settings (Настройки)                                     ║
@@ -1507,6 +1507,47 @@ html, body {
 .banned-name { flex: 1; margin-right: 10px; }
 .btn-xs { padding: 4px 12px; font-size: 11px; }
 .settings-empty { color: var(--text-dim); font-size: 12px; padding: 8px 0; }
+
+/* ── Карточки мышечных групп (screen-muscles) ── */
+.muscle-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg2);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: transform .1s, border-color .15s, background .15s;
+}
+.muscle-card:active { transform: scale(0.97); }
+.muscle-card--pending { border-color: var(--border2); }
+.muscle-card--pending:active { border-color: var(--led-dim); background: var(--bg3); }
+.muscle-card--busy { border-color: var(--text-dim); opacity: 0.6; }
+.muscle-card--done {
+  border-color: var(--led-dim); opacity: 0.5; pointer-events: none;
+}
+.muscle-card--done .muscle-card-status { color: var(--led); }
+.muscle-card-img {
+  width: 56px; height: 56px; border-radius: 8px;
+  object-fit: cover; background: var(--bg3); flex-shrink: 0;
+}
+.muscle-card-info { flex: 1; min-width: 0; }
+.muscle-card-type {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-dim); margin-bottom: 2px;
+}
+.muscle-card-muscle {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.muscle-card-movement {
+  font-size: 12px; color: var(--text-dim); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.muscle-card-status {
+  font-size: 11px; font-weight: 600; color: var(--text-dim);
+  flex-shrink: 0; text-align: right;
+}
 </style>
 </head>
 <body>
@@ -1520,11 +1561,12 @@ html, body {
 
      Порядок экранов:
      1. screen-home       — Главный экран (сетка дней)
-     2. screen-workout    — Тренировка (список упражнений)
-     3. screen-exercise   — Детали упражнения (варианты)
-     4. screen-variation  — Вариант + подходы + ввод веса
-     5. screen-stats      — Статистика и история
-     6. screen-settings   — Настройки
+     2. screen-muscles    — Группы мышц тренировочного дня
+     3. screen-workout    — Упражнение (один слот: делай/проверь)
+     4. screen-exercise   — Детали упражнения (варианты)
+     5. screen-variation  — Вариант + подходы + ввод веса
+     6. screen-stats      — Статистика и история
+     7. screen-settings   — Настройки
 
      Плюс глобальные элементы:
      • #toast             — Всплывающее уведомление
@@ -1577,7 +1619,7 @@ html, body {
         <div class="logo" id="w-day-label">Д1 · ВЕРХ</div>
         <div class="title">ТРЕНИРОВКА</div>
       </div>
-      <button class="back-btn" id="btn-go-home" aria-label="Вернуться на главную">← Выйти</button>
+      <button class="back-btn" id="btn-go-home" aria-label="Вернуться к группам мышц">← Назад</button>
     </div>
     <div class="battery-wrap">
       <span class="battery-label">Заряд</span>
@@ -1589,6 +1631,32 @@ html, body {
     </div>
     <div class="scroll-body" id="exercise-list">
       <!-- Содержимое рендерится из JS: Workout.render() -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: MUSCLES — Группы мышц тренировочного дня
+       ──────────────────────────────────────────────────
+       Промежуточный экран между выбором дня и упражнениями.
+       Показывает 6 карточек мышечных групп с иконками.
+       Тап по карточке → screen-workout для одного слота.
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-muscles">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo" id="m-day-label">Д1 · ВЕРХ</div>
+        <div class="title">ГРУППЫ МЫШЦ</div>
+      </div>
+      <button class="back-btn" id="btn-muscles-home" aria-label="Вернуться на главную">← Выйти</button>
+    </div>
+    <div class="battery-wrap">
+      <span class="battery-label">Заряд</span>
+      <div class="battery-outer"><div class="battery-fill" id="battery-fill-m"></div></div>
+      <span class="battery-pct" id="battery-pct-m">0%</span>
+    </div>
+    <div class="workout-hint" id="muscles-hint"></div>
+    <div class="scroll-body" id="muscle-list">
+      <!-- Содержимое рендерится из JS: Workout.renderMuscles() -->
     </div>
   </div>
 
@@ -3314,66 +3382,60 @@ const Workout = {
     s.currentSlotIdx = null;
     const saved = App.persist.progress[day];
     s.slots = (saved && saved.slots) ? saved.slots : this.buildSlots(day);
-    document.getElementById('w-day-label').textContent = day + ' · ' + workoutSchedule[day].name;
-    document.getElementById('workout-hint').textContent = dayDescriptions[day] || '';
+    document.getElementById('m-day-label').textContent = day + ' · ' + workoutSchedule[day].name;
+    document.getElementById('muscles-hint').textContent = dayDescriptions[day] || '';
     App.updateBattery();
-    this.render();
-    UI.showScreen('screen-workout');
+    this.renderMuscles();
+    UI.showScreen('screen-muscles');
   },
 
   /**
-   * Рендерит три зоны тренировки:
-   *   ДЕЛАЙ СЕЙЧАС — лучший доступный вариант для каждого незавершённого слота
+   * Рендерит экран упражнения для одного слота (screen-workout).
+   * Показывает:
+   *   ДЕЛАЙ СЕЙЧАС — лучший доступный вариант (если есть varQueue)
    *   ПРОВЕРЬ      — варианты, отмеченные "занято" (можно вернуть)
-   *   ВЫПОЛНЕНО    — завершённые слоты (справочно)
-   * Если все слоты выполнены — показывает баннер завершения тренировки.
+   *   ВЫПОЛНЕНО    — если слот завершён
    */
   render() {
     const list = document.getElementById('exercise-list');
     list.innerHTML = '';
     const s = App.state;
-    if (!s.slots.length) return;
+    const slotIdx = s.currentSlotIdx;
+    if (slotIdx === null || slotIdx === undefined) return;
+    const sl = s.slots[slotIdx];
+    if (!sl) return;
 
-    const pendingSlots = s.slots.filter(sl => !sl.done && sl.varQueue.length > 0);
-    const busyItems = s.slots.filter(sl => !sl.done).flatMap(sl =>
-      sl.busy.map(b => ({ slot: sl, varIdx: b.idx }))
-    );
-    const doneSlots = s.slots.filter(sl => sl.done);
-
-    /* ── Баннер завершения тренировки ── */
-    if (pendingSlots.length === 0 && busyItems.length === 0) {
-      const completedExercises = (App.persist.progress[s.currentDay] || {}).completedExercises || [];
-      const totalVolume = completedExercises.reduce((sum, ex) =>
-        sum + ex.sets.reduce((s2, set) => s2 + (set.weight || 0) * (set.reps || 0), 0), 0);
-      const b = document.createElement('div');
-      b.className = 'complete-banner visible';
-      b.innerHTML = `
-        <object data="assets/img/ui/workout-complete.svg" type="image/svg+xml"
-                width="88" height="143" aria-label="Тренировка завершена"
-                style="display:block;margin:0 auto 20px;overflow:visible"></object>
-        <div class="complete-title">БАТАРЕЯ<br>ЗАРЯЖЕНА</div>
-        <div class="complete-sub">// 100% · все упражнения выполнены</div>
-        ${totalVolume > 0 ? `<div class="complete-stats">Общий объём: <strong>${totalVolume.toLocaleString('ru')} кг</strong></div>` : ''}
-        <button class="btn btn-full btn-big-primary" id="btn-finish-workout">Завершить тренировку</button>`;
-      list.appendChild(b);
+    /* ── Если слот выполнен — показываем done-row ── */
+    if (sl.done) {
+      const varKey = s.currentDay + '-' + sl.id;
+      const variant = sl.doneVarIdx !== null
+        ? (exerciseVariations[varKey] || [])[sl.doneVarIdx] : null;
+      const z3 = document.createElement('div');
+      z3.className = 'workout-zone workout-zone-done';
+      z3.innerHTML = '<div class="zone-label zone-label-dim">// Выполнено ✓</div>';
+      const row = document.createElement('div');
+      row.className = 'done-row';
+      row.innerHTML = `<span class="done-check">✓</span>
+        <span class="done-movement">${sl.movement}</span>
+        ${variant ? `<span class="done-variant-name"> — ${variant.name}</span>` : ''}`;
+      z3.appendChild(row);
+      list.appendChild(z3);
       return;
     }
 
-    /* ── Зона 1: ДЕЛАЙ СЕЙЧАС ── */
-    if (pendingSlots.length > 0) {
-      const z1 = document.createElement('div');
-      z1.className = 'workout-zone';
-      z1.innerHTML = '<div class="zone-label">// Делай сейчас</div>';
-      pendingSlots.forEach(sl => {
-        const slotIdx = s.slots.indexOf(sl);
-        const varKey = s.currentDay + '-' + sl.id;
-        const totalVars = (exerciseVariations[varKey] || []).length;
-        const topVarIdx = sl.varQueue[0];
-        const variant = (exerciseVariations[varKey] || [])[topVarIdx];
-        if (!variant) return;
+    /* ── Зона 1: ДЕЛАЙ СЕЙЧАС (если есть varQueue) ── */
+    if (sl.varQueue.length > 0) {
+      const varKey = s.currentDay + '-' + sl.id;
+      const totalVars = (exerciseVariations[varKey] || []).length;
+      const topVarIdx = sl.varQueue[0];
+      const variant = (exerciseVariations[varKey] || [])[topVarIdx];
+      if (variant) {
         const stars = varPriority(topVarIdx);
-        const isAlternative = sl.busy.length > 0; /* Уже нажимали «Занято» */
-        const varNum = topVarIdx + 1; /* Номер текущего варианта (1-based) */
+        const isAlternative = sl.busy.length > 0;
+        const varNum = topVarIdx + 1;
+        const z1 = document.createElement('div');
+        z1.className = 'workout-zone';
+        z1.innerHTML = '<div class="zone-label">// Делай сейчас</div>';
         const card = document.createElement('div');
         card.className = 'now-card' + (isAlternative ? ' now-card--alt' : '');
         card.dataset.action  = 'slot-start';
@@ -3403,30 +3465,29 @@ const Workout = {
         z1.appendChild(card);
         ImgLoader.setSrc(card.querySelector('.now-card-thumb img'),
           `assets/img/exercises/${variant.img}.png`, variant.name);
-      });
-      list.appendChild(z1);
+        list.appendChild(z1);
+      }
     }
 
-    /* ── Зона 2: ПРОВЕРЬ ── */
-    if (busyItems.length > 0) {
+    /* ── Зона 2: ПРОВЕРЬ (busy items для этого слота) ── */
+    if (sl.busy.length > 0) {
       const z2 = document.createElement('div');
       z2.className = 'workout-zone workout-zone-check';
       z2.innerHTML = '<div class="zone-label zone-label-dim">// Проверь — может освободилось</div>';
-      busyItems.forEach(({ slot, varIdx }) => {
-        const slotIdx = s.slots.indexOf(slot);
-        const varKey = s.currentDay + '-' + slot.id;
-        const variant = (exerciseVariations[varKey] || [])[varIdx];
+      sl.busy.forEach(b => {
+        const varKey = s.currentDay + '-' + sl.id;
+        const variant = (exerciseVariations[varKey] || [])[b.idx];
         if (!variant) return;
         const card = document.createElement('div');
         card.className = 'check-card';
         card.innerHTML = `
           <div class="check-card-header">
-            <span class="exercise-type-badge">${slot.type}</span>
+            <span class="exercise-type-badge">${sl.type}</span>
             <span class="check-busy-label">занято</span>
           </div>
           <div class="now-card-body">
             <div class="now-card-text">
-              <div class="now-movement">${slot.movement}</div>
+              <div class="now-movement">${sl.movement}</div>
               <div class="now-variant-name">${variant.name}</div>
               <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
             </div>
@@ -3435,33 +3496,14 @@ const Workout = {
             </div>
           </div>
           <div class="now-actions">
-            <button class="btn btn-primary" data-action="check-start" data-slot="${slotIdx}" data-varidx="${varIdx}">→ Освободилось</button>
-            <button class="btn btn-ghost" data-action="check-dismiss" data-slot="${slotIdx}" data-varidx="${varIdx}">✕ Пропустить</button>
+            <button class="btn btn-primary" data-action="check-start" data-slot="${slotIdx}" data-varidx="${b.idx}">→ Освободилось</button>
+            <button class="btn btn-ghost" data-action="check-dismiss" data-slot="${slotIdx}" data-varidx="${b.idx}">✕ Пропустить</button>
           </div>`;
         z2.appendChild(card);
         ImgLoader.setSrc(card.querySelector('.now-card-thumb img'),
           `assets/img/exercises/${variant.img}.png`, variant.name);
       });
       list.appendChild(z2);
-    }
-
-    /* ── Зона 3: ВЫПОЛНЕНО ── */
-    if (doneSlots.length > 0) {
-      const z3 = document.createElement('div');
-      z3.className = 'workout-zone workout-zone-done';
-      z3.innerHTML = '<div class="zone-label zone-label-dim">// Выполнено ✓</div>';
-      doneSlots.forEach(sl => {
-        const varKey = s.currentDay + '-' + sl.id;
-        const variant = sl.doneVarIdx !== null
-          ? (exerciseVariations[varKey] || [])[sl.doneVarIdx] : null;
-        const row = document.createElement('div');
-        row.className = 'done-row';
-        row.innerHTML = `<span class="done-check">✓</span>
-          <span class="done-movement">${sl.movement}</span>
-          ${variant ? `<span class="done-variant-name"> — ${variant.name}</span>` : ''}`;
-        z3.appendChild(row);
-      });
-      list.appendChild(z3);
     }
   },
 
@@ -3792,11 +3834,14 @@ const Workout = {
       }
     }
 
-    /* Toast: объясняем пользователю что произошло */
+    /* Toast + навигация */
     if (slot.varQueue.length > 0) {
       UI.toast('Тренажёр занят → показан следующий вариант');
     } else {
       UI.toast('Все варианты заняты — проверь позже');
+      /* Нет доступных вариантов → возвращаемся к группам мышц */
+      this.renderMuscles();
+      UI.showScreen('screen-muscles');
     }
     UI.haptic(10);
   },
@@ -3827,7 +3872,13 @@ const Workout = {
     slot.busy = slot.busy.filter(b => b.idx !== varIdx);
     // не возвращаем в varQueue — вариант навсегда пропущен на сегодня
     App.saveProgress();
-    this.render();
+    /* Если слот полностью пуст (нет varQueue и нет busy) → вернуться к группам мышц */
+    if (slot.varQueue.length === 0 && slot.busy.length === 0) {
+      this.renderMuscles();
+      UI.showScreen('screen-muscles');
+    } else {
+      this.render();
+    }
   },
 
   /**
@@ -3835,7 +3886,7 @@ const Workout = {
    * 1. Помечает слот done = true
    * 2. Записывает данные подходов в progress.completedExercises
    * 3. Обновляет батарею
-   * 4. Возвращает на screen-workout
+   * 4. Возвращает на screen-muscles
    */
   completeExercise() {
     const s = App.state;
@@ -3864,8 +3915,8 @@ const Workout = {
     App.save();
 
     App.updateBattery();
-    this.render();
-    UI.showScreen('screen-workout');
+    this.renderMuscles();
+    UI.showScreen('screen-muscles');
     UI.haptic(20);
   },
 
@@ -3908,6 +3959,106 @@ const Workout = {
   },
 
   /**
+   * Рендерит баннер завершения тренировки в указанный контейнер.
+   * Используется и в renderMuscles(), и в render() для одного слота.
+   * @param {HTMLElement} container — DOM-элемент, куда вставляется баннер
+   */
+  renderCompleteBanner(container) {
+    const s = App.state;
+    const completedExercises = (App.persist.progress[s.currentDay] || {}).completedExercises || [];
+    const totalVolume = completedExercises.reduce((sum, ex) =>
+      sum + ex.sets.reduce((s2, set) => s2 + (set.weight || 0) * (set.reps || 0), 0), 0);
+    const b = document.createElement('div');
+    b.className = 'complete-banner visible';
+    b.innerHTML = `
+      <object data="assets/img/ui/workout-complete.svg" type="image/svg+xml"
+              width="88" height="143" aria-label="Тренировка завершена"
+              style="display:block;margin:0 auto 20px;overflow:visible"></object>
+      <div class="complete-title">БАТАРЕЯ<br>ЗАРЯЖЕНА</div>
+      <div class="complete-sub">// 100% · все упражнения выполнены</div>
+      ${totalVolume > 0 ? `<div class="complete-stats">Общий объём: <strong>${totalVolume.toLocaleString('ru')} кг</strong></div>` : ''}
+      <button class="btn btn-full btn-big-primary" id="btn-finish-workout">Завершить тренировку</button>`;
+    container.appendChild(b);
+  },
+
+  /**
+   * Рендерит экран мышечных групп (screen-muscles).
+   * 6 карточек — по одной на каждый слот тренировочного дня.
+   * Каждая карточка показывает мышечную группу, тип движения и статус.
+   */
+  renderMuscles() {
+    const list = document.getElementById('muscle-list');
+    list.innerHTML = '';
+    const s = App.state;
+    if (!s.slots || !s.slots.length) return;
+
+    App.updateBattery();
+
+    /* Проверяем завершение */
+    const pendingSlots = s.slots.filter(sl => !sl.done && sl.varQueue.length > 0);
+    const busyItems = s.slots.filter(sl => !sl.done).flatMap(sl =>
+      sl.busy.map(b => ({ slot: sl, varIdx: b.idx }))
+    );
+
+    if (pendingSlots.length === 0 && busyItems.length === 0) {
+      this.renderCompleteBanner(list);
+      return;
+    }
+
+    s.slots.forEach((sl, slotIdx) => {
+      const card = document.createElement('div');
+      let statusClass, statusText;
+
+      if (sl.done) {
+        statusClass = 'muscle-card--done';
+        statusText = '✓';
+      } else if (sl.varQueue.length === 0) {
+        statusClass = 'muscle-card--busy';
+        statusText = '⊘';
+      } else {
+        statusClass = 'muscle-card--pending';
+        statusText = '→';
+      }
+
+      card.className = 'muscle-card ' + statusClass;
+      if (!sl.done) {
+        card.dataset.action = 'open-muscle';
+        card.dataset.slot = slotIdx;
+      }
+
+      const muscleKey = ImgLoader.getMuscleKey(sl.muscle);
+      card.innerHTML = `
+        <img class="muscle-card-img" src="data:," alt="${sl.muscle}" data-fallback="muscle">
+        <div class="muscle-card-info">
+          <div class="muscle-card-type">${sl.type}</div>
+          <div class="muscle-card-muscle">${sl.muscle}</div>
+          <div class="muscle-card-movement">${sl.movement}</div>
+        </div>
+        <div class="muscle-card-status">${statusText}</div>`;
+
+      list.appendChild(card);
+      ImgLoader.setSrc(card.querySelector('.muscle-card-img'),
+        `assets/img/muscles/${muscleKey}.png`, sl.muscle);
+    });
+  },
+
+  /**
+   * Открывает screen-workout для одного слота (мышечной группы).
+   * @param {number} slotIdx — индекс слота в App.state.slots
+   */
+  openMuscle(slotIdx) {
+    const s = App.state;
+    s.currentSlotIdx = slotIdx;
+    const slot = s.slots[slotIdx];
+    if (!slot) return;
+    document.getElementById('w-day-label').textContent =
+      s.currentDay + ' · ' + slot.muscle;
+    document.getElementById('workout-hint').textContent = slot.movement;
+    this.render();
+    UI.showScreen('screen-workout');
+  },
+
+  /**
    * Выход с экрана тренировки на главную.
    * Сохраняет текущий прогресс для возобновления.
    */
@@ -3943,6 +4094,11 @@ document.getElementById('app').addEventListener('click', (e) => {
   const action = target.dataset.action;
 
   switch (action) {
+    /* ── Экран мышечных групп: открыть слот ── */
+    case 'open-muscle':
+      Workout.openMuscle(parseInt(target.dataset.slot));
+      break;
+
     /* ── Тренировка: обзор слота (дополнительный экран) ── */
     case 'open-exercise':
       Workout.openExercise(parseInt(target.dataset.index));
@@ -4050,8 +4206,15 @@ document.getElementById('app').addEventListener('click', (e) => {
    Для них используем прямой addEventListener по id.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Кнопка «Выйти» из тренировки → сохранить прогресс и вернуться */
-document.getElementById('btn-go-home').addEventListener('click', () => Workout.goHome());
+/* Кнопка «Назад» из screen-workout → вернуться к группам мышц */
+document.getElementById('btn-go-home').addEventListener('click', () => {
+  App.saveProgress();
+  Workout.renderMuscles();
+  UI.showScreen('screen-muscles');
+});
+
+/* Кнопка «Выйти» из screen-muscles → сохранить прогресс и вернуться на главную */
+document.getElementById('btn-muscles-home').addEventListener('click', () => Workout.goHome());
 
 /* Кнопка «Назад» на экране деталей (обзор) → вернуться к тренировке */
 document.getElementById('btn-cancel-exercise').addEventListener('click', () => UI.showScreen('screen-workout'));
