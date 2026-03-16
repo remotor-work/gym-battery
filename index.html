@@ -1053,6 +1053,7 @@ html, body {
 }
 .var-heat-fill {
   height: 100%; border-radius: 2px; transition: width 0.5s ease;
+  background: linear-gradient(to right, #e53935, #ff9800 45%, #8bc34a 70%, #00e676);
 }
 
 /* ── VARIATION DETAIL — Экран выполнения подходов ── */
@@ -2813,6 +2814,15 @@ const App = {
   addHeat(imgSlug) {
     this.persist.exerciseHeat[imgSlug] = Math.min(10, this.getHeat(imgSlug) + 1);
   },
+  /** Возвращает HTML-строку полоски активности для вставки в карточку */
+  heatBarHTML(imgSlug, compact) {
+    const pct = this.getHeat(imgSlug) * 10;
+    const h = compact ? '2px' : '3px';
+    return `<div class="var-heat-row"${compact ? ' style="margin:3px 0 0;padding-left:0"' : ''}>` +
+      (compact ? '' : '<span class="var-heat-label">АКТИВНОСТЬ</span>') +
+      `<div class="var-heat-track" style="height:${h}">` +
+      `<div class="var-heat-fill" style="width:${pct}%"></div></div></div>`;
+  },
 
   /**
    * Сбрасывает прогресс текущей недели.
@@ -3559,6 +3569,7 @@ const Workout = {
               <div class="now-movement">${sl.movement}</div>
               <div class="now-variant-name">${variant.name}</div>
               <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+              ${App.heatBarHTML(variant.img, false)}
             </div>
             <div class="now-card-thumb">
               <img src="data:," alt="${variant.name}" data-fallback="exercise">
@@ -3590,6 +3601,7 @@ const Workout = {
               <div class="alt-variant-info">
                 <div class="alt-variant-name">${altVar.name}</div>
                 <div class="alt-variant-tags">${altVar.tags.join(' · ')}</div>
+                ${App.heatBarHTML(altVar.img, true)}
               </div>
               <span class="alt-variant-arrow">›</span>`;
             altSection.appendChild(altCard);
@@ -3681,11 +3693,6 @@ const Workout = {
         const stars    = varPriority(i);
         const heat     = App.getHeat(v.img);                // 0–10
         const heatPct  = heat * 10;                         // 0–100%
-        const heatColor = heat === 0 ? 'transparent'
-          : heat <= 3 ? '#e53935'
-          : heat <= 6 ? '#ff9800'
-          : heat <= 8 ? '#8bc34a'
-          : '#00e676';
         return `
         <div class="variation-card${isBanned ? ' variation-card--banned' : ''}"
              ${isBanned ? '' : `data-action="open-variation" data-varkey="${varKey}" data-varidx="${i}"`}
@@ -3700,7 +3707,7 @@ const Workout = {
           <div class="var-heat-row">
             <span class="var-heat-label">АКТИВНОСТЬ</span>
             <div class="var-heat-track">
-              <div class="var-heat-fill" style="width:${heatPct}%;background:${heatColor}"></div>
+              <div class="var-heat-fill" style="width:${heatPct}%"></div>
             </div>
           </div>
           <div class="var-card-thumb"><img src="data:," alt="${v.name}" data-fallback="exercise"></div>
