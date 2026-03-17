@@ -59,17 +59,17 @@
   ║       │   ├── biceps.png                — Иллюстрация: бицепс              ║
   ║       │   └── triceps.png               — Иллюстрация: трицепс             ║
   ║       ├── exercises/                                                        ║
-  ║       │   └── {exercise-slug}.png        — Техника выполнения варианта       ║
-  ║       │       (Пример: chest-flat-barbell.png, legs-squat-back.png)        ║
-  ║       │       Формат дня: mon/tue/wed/thu/fri/sat/sun (только английский)   ║
+  ║       │   └── {exercise-slug}.gif/.png   — Техника выполнения варианта       ║
+  ║       │       (Пример: chest-flat-barbell.gif, legs-squat-back.gif)        ║
+  ║       │       Slug: {мышца}-{движение}-{оборудование} (kebab-case)         ║
   ║       └── ui/                                                               ║
   ║           ├── workout-complete.png       — Иконка завершения тренировки     ║
   ║           ├── stats-icon.png            — Иконка для экрана статистики      ║
   ║           └── empty-state.png           — Заглушка: «пока пусто»           ║
   ║                                                                             ║
   ║   Автор:    [Имя разработчика]                                              ║
-  ║   Версия:   3.0.0-dev                                                      ║
-  ║   Дата:     Февраль 2026                                                   ║
+  ║   Версия:   3.3                                                            ║
+  ║   Дата:     Март 2026                                                      ║
   ║   Лицензия: [Указать лицензию]                                             ║
   ║                                                                             ║
   ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -643,33 +643,11 @@ html, body {
   color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   WORKOUT LIST — Список упражнений в тренировке
-   ──────────────────────────────────────────────
-   Экран screen-workout: показывает очередь упражнений.
-   Каждый элемент (.exercise-item) содержит:
-   • Номер + тип (badge) + мышечная группа
-   • Название движения
-   • Кнопки: «Начать» и «Отложить»
-   ══════════════════════════════════════════════════════════════════ */
-#screen-workout .scroll-body { padding: 0; }
-
-.exercise-item {
-  border-bottom: 1px solid var(--border);
-  padding: 13px 16px;
-  display: flex; flex-direction: column; gap: 8px;
-  animation: slideIn 0.22s ease;  /* Плавное появление при рендере */
-}
-
-/* Анимация появления элемента списка */
+/* Анимация появления элемента */
 @keyframes slideIn {
   from { opacity:0; transform: translateY(5px); }
   to   { opacity:1; transform: translateY(0); }
 }
-
-/* Мета-строка: номер, тип, мышца */
-.exercise-meta { display: flex; align-items: center; gap: 8px; }
-.exercise-index { font-family: var(--orb); font-size: 9px; color: var(--text-dim); min-width: 22px; flex-shrink: 0; font-weight: 500; }
 
 /* Бэйдж типа упражнения (ЖИМ, ТЯГА, ПРИСЕД, ...) */
 .exercise-type-badge {
@@ -679,21 +657,6 @@ html, body {
   border: 1px solid var(--led-dim); border-radius: 20px;
   padding: 3px 10px; flex-shrink: 0;
 }
-.exercise-muscle { font-family: var(--exo); font-size: 10px; color: var(--text-dim); flex: 1; text-align: right; font-weight: 500; }
-
-/* Название движения (крупный белый текст) */
-.exercise-movement {
-  font-family: var(--exo); font-size: 14px; font-weight: 500;
-  color: var(--white); letter-spacing: 0.02em; padding-left: 30px; line-height: 1.35;
-}
-
-/* Тег «отложено ×N» рядом с названием */
-.skip-tag {
-  display: inline-block; font-family: var(--orb); font-size: 8px; letter-spacing: 0.08em;
-  color: var(--text-dim); border: 1px solid var(--border); border-radius: 4px;
-  padding: 2px 7px; margin-left: 7px; vertical-align: middle; font-weight: 500;
-}
-.exercise-actions { display: flex; gap: 8px; padding-left: 30px; margin-top: 2px; }
 
 /* ══════════════════════════════════════════════════════════════════
    THREE-ZONE WORKOUT LAYOUT
@@ -715,7 +678,7 @@ html, body {
 
 /* ДЕЛАЙ СЕЙЧАС */
 .now-card {
-  background: var(--card-bg);
+  background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 13px 14px 11px;
@@ -850,7 +813,7 @@ html, body {
   font-size: 12px;
 }
 .done-check { color: var(--led); font-weight: 700; font-size: 13px; }
-.done-movement { color: var(--text-secondary); font-family: var(--exo); }
+.done-movement { color: var(--text); font-family: var(--exo); }
 .done-variant-name { font-size: 10px; color: var(--text-dim); }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1169,23 +1132,14 @@ html, body {
 .set-input::placeholder { color: var(--text-off); font-weight: 400; }
 
 /* ══════════════════════════════════════════════════════════════════
-   REST TIMER — Таймер отдыха между подходами
-   ──────────────────────────────────────────
-   Полноэкранный оверлей с круговым прогрессом (SVG).
+   REST TIMER — Компактный таймер отдыха между подходами
+   ──────────────────────────────────────────────────────
+   Небольшой виджет в правом нижнем углу (position: fixed).
+   Не блокирует основной экран — пользователь может продолжать
+   просматривать описание или менять вес/повторения.
 
-   Структура:
-   ┌───────────────────────────────────────────┐
-   │           ОТДЫХ МЕЖДУ ПОДХОДАМИ            │  ← label
-   │                                           │
-   │              ╭─────────╮                  │
-   │            ╭─│   87    │─╮               │  ← timer-text
-   │           │   ╰─────────╯   │              │
-   │            ╰──── ○ ○ ────╯                │  ← SVG ring
-   │                                           │
-   │           [ Пропустить → ]                │  ← skip btn
-   └───────────────────────────────────────────┘
-
-   SVG-кольцо: r=70, circumference = 2πr ≈ 439.82.
+   Структура: SVG-кольцо (50×50) + цифра + кнопка «Пропустить ×».
+   SVG-кольцо: r=70 внутри viewBox 160×160, circumference = 2πr ≈ 439.82.
    Прогресс управляется через stroke-dashoffset.
    ══════════════════════════════════════════════════════════════════ */
 .rest-timer-overlay {
@@ -1206,12 +1160,6 @@ html, body {
 .rest-timer-overlay.visible { display: flex; }
 @keyframes timerSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.rest-timer-label { display: none; }
-.rest-timer-value {
-  font-family: var(--orb); font-size: 56px; font-weight: 900;
-  color: var(--led); letter-spacing: 0.05em;
-  text-shadow: 0 0 30px rgba(217,115,32,0.5);
-}
 .rest-timer-ring {
   width: 50px; height: 50px;
   position: relative;
@@ -1646,7 +1594,7 @@ html, body {
        Содержит:
        • Хедер с логотипом + кнопки (Статистика, Настройки)
        • Week bar (прогресс недели + сброс)
-       • Day grid (сетка 7 дней, 2 колонки)
+       • Day grid (4 тренировочных дня, вертикально)
        ═══════════════════════════════════════════════════ -->
   <div class="screen active" id="screen-home">
     <div class="app-header">
@@ -2108,9 +2056,9 @@ html, body {
    ├── muscles/{key}.png                (иллюстрации мышечных групп)
    │   Ключи: chest, back, shoulders, legs, biceps, triceps
    ├── exercises/{exercise-slug}.png    (техника выполнения)
-   │   Имя берётся из поля img варианта: v.img + ".png"
-   │   Пример: chest-flat-barbell.png, legs-squat-back.png
-   │   day — только английский: mon/tue/wed/thu/fri/sat/sun
+   │   Имя берётся из поля img варианта: v.img
+   │   Сначала пробует .gif, потом .png, потом SVG-заглушку
+   │   Пример: chest-flat-barbell.gif, legs-squat-back.gif
    └── ui/
        ├── workout-complete.png         (баннер завершения)
        ├── stats-icon.png               (иконка статистики)
@@ -2295,7 +2243,6 @@ const exerciseVariations = {
     { img:"chest-flat-machine",    name:"Тренажёр грудной жим (Chest Press Machine)", tags:["Тренажёр chest-press","Регулируемое сиденье"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Сиденье: рукояти на уровне нижней части груди. Спина прижата. Жми вперёд, не блокируя локти. Медленно возвращай." },
     { img:"chest-flat-cable",      name:"Кроссовер стоя (Standing Cable Chest Press)", tags:["Кабельный кроссовер","D-рукояти на уровне груди"], muscles:"Грудные (основная), передние дельты", desc:"Блоки на уровне груди. Шаг вперёд, ноги устойчиво. Жми обеими руками вперёд, сводя перед грудью. Медленно возвращай." },
     { img:"chest-flat-converge",   name:"Тренажёр со сходящимися рычагами (Converging Chest Press Machine)", tags:["Тренажёр Life Fitness / Cybex","Регулируемое сиденье"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Сиденье: рукояти на уровне нижней части груди. Жми вперёд — рычаги сходятся к центру. Задержись в конечной точке. Медленно возвращай." },
-    { img:"chest-flat-neutral",    name:"Тренажёр с нейтральным хватом (Neutral Grip Chest Press Machine)", tags:["Selectorized chest press","Параллельные рукояти"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Сиденье: рукояти на уровне нижней части груди. Нейтральный хват (ладони друг к другу). Жми вперёд до почти полного разгибания. Медленно возвращай." },
     { img:"chest-flat-hammer",     name:"Hammer Strength — горизонтальный жим (ISO-Lateral Chest Press)", tags:["Hammer Strength","Блины","Независимые рычаги"], muscles:"Грудные (основная), передние дельты, трицепс", desc:"Навесь блины. Сядь, спина прижата. Рукояти на уровне нижней части груди. Каждый рычаг движется независимо — помогает выровнять силовой дисбаланс. Жми вперёд до почти полного разгибания. Задержись 1 сек. Медленно возвращай." }
   ],
   "Д1-3":[
@@ -3069,10 +3016,9 @@ const UI = {
   /**
    * Рендерит главный экран:
    * 1. Week bar — строка прогресса недели
-   * 2. Day grid — сетка из 7 карточек дней
+   * 2. Day grid — 4 карточки тренировочных дней (Д1–Д4)
    *
    * Каждая карточка определяет своё состояние:
-   * • inactive  — день отдыха (СР, СБ, ВС)
    * • done      — тренировка завершена
    * • partial   — тренировка начата, но не завершена
    * • available — доступна для запуска
