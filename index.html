@@ -2885,6 +2885,7 @@ const App = {
       date: today,
       day: day,
       exercises: completedExercises.map(ex => ({
+        name: ex.name || '',
         muscle: ex.muscle,
         movement: ex.movement,
         type: ex.type,
@@ -3429,8 +3430,9 @@ const UI = {
               .filter(s => s.weight > 0 || s.reps > 0)
               .map(s => `${s.weight}×${s.reps}`)
               .join(', ');
+            const exLabel = ex.name || ex.muscle;
             html += `<div class="log-exercise">
-              <span class="log-ex-muscle">${ex.muscle}</span>
+              <span class="log-ex-muscle">${exLabel}</span>
               ${setsStr ? `<span class="log-ex-sets">${setsStr}</span>` : ''}
             </div>`;
           });
@@ -4263,8 +4265,10 @@ const Workout = {
     prog.slots = s.slots;
     if (!prog.completedExercises) prog.completedExercises = [];
     /* Сохраняем данные завершённого упражнения */
+    const _varName = _doneVar ? _doneVar.name : '';
     prog.completedExercises.push({
       id: slot.id,
+      name: _varName,
       movement: slot.movement,
       muscle: slot.muscle,
       type: slot.type,
