@@ -1512,19 +1512,17 @@ html, body {
 }
 .catalog-item:active { background: var(--bg2); }
 
-/* Миниатюра 3:2 */
+/* Миниатюра — ширина фиксирована, высота по пропорциям файла */
 .catalog-thumb {
-  width: 96px; height: 64px; /* 96 × 2/3 — fallback для Chrome < 88 */
+  position: relative;
+  width: 96px;
   border-radius: var(--r2); overflow: hidden;
   flex-shrink: 0; background: var(--bg2);
   border: 1px solid var(--border);
 }
-@supports (aspect-ratio: 3/2) {
-  .catalog-thumb { height: auto; aspect-ratio: 3/2; }
-}
 .catalog-thumb img {
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: center;
+  width: 100%; height: auto;
+  display: block;
   opacity: 0.85; transition: opacity 0.3s;
 }
 .catalog-thumb img.loaded { opacity: 1; }
