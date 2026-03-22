@@ -1264,6 +1264,52 @@ html, body {
 .history-summary strong { color: var(--led); font-weight: 600; }
 
 /* ══════════════════════════════════════════════════════════════════
+   LOG SCREEN — Журнал тренировок
+   ──────────────────────────────
+   Список дней за последние 30 суток: тренировки + дни отдыха.
+   ══════════════════════════════════════════════════════════════════ */
+.log-day {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.log-day:last-child { border-bottom: none; }
+.log-day--rest {
+  display: flex; justify-content: space-between; align-items: center;
+  opacity: 0.4;
+}
+.log-day--active .log-day-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.log-date {
+  font-family: var(--orb); font-size: 9px; letter-spacing: 0.12em;
+  color: var(--text-dim); text-transform: uppercase;
+}
+.log-day-tag {
+  font-family: var(--orb); font-size: 9px; font-weight: 700;
+  color: var(--led); background: var(--led-bg);
+  border: 1px solid var(--led-dim); border-radius: var(--r3);
+  padding: 2px 6px;
+}
+.log-volume {
+  font-family: var(--orb); font-size: 9px; color: var(--green); margin-left: auto;
+}
+.log-rest-label {
+  font-family: var(--exo); font-size: 11px; color: var(--text-off);
+}
+.log-exercises { padding-left: 4px; }
+.log-exercise {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 3px 0;
+}
+.log-ex-muscle {
+  font-family: var(--exo); font-size: 11px; color: var(--text);
+}
+.log-ex-sets {
+  font-family: var(--orb); font-size: 9px; color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+/* ══════════════════════════════════════════════════════════════════
    SETTINGS SCREEN — Экран настроек
    ────────────────────────────────
    Группы настроек (.settings-group) с рядами (.setting-row).
@@ -1603,6 +1649,7 @@ html, body {
         <div class="title">GYM BATTERY</div>
       </div>
       <div class="header-right">
+        <button class="icon-btn" id="btn-log" aria-label="Журнал"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="1" y="0" width="12" height="2"/><rect x="1" y="4" width="10" height="2"/><rect x="1" y="8" width="8" height="2"/><rect x="1" y="12" width="6" height="2"/></svg></button>
         <button class="icon-btn" id="btn-stats" aria-label="Статистика"><svg width="14" height="13" viewBox="0 0 14 13" fill="currentColor" aria-hidden="true"><rect x="0" y="6" width="3" height="7"/><rect x="4" y="3" width="3" height="10"/><rect x="8" y="0" width="3" height="13"/><rect x="12" y="4" width="2" height="9"/></svg></button>
         <button class="icon-btn" id="btn-catalog" aria-label="Каталог упражнений"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="6" height="6"/><rect x="8" y="0" width="6" height="6"/><rect x="0" y="8" width="6" height="6"/><rect x="8" y="8" width="6" height="6"/></svg></button>
         <button class="icon-btn" id="btn-settings" aria-label="Настройки">⚙</button>
@@ -1661,7 +1708,10 @@ html, body {
         <div class="logo" id="m-day-label">Д1 · ВЕРХ</div>
         <div class="title">ГРУППЫ МЫШЦ</div>
       </div>
-      <button class="back-btn" id="btn-muscles-home" aria-label="Вернуться на главную">← Выйти</button>
+      <div class="header-right">
+        <button class="back-btn" id="btn-regenerate" aria-label="Перегенерировать">⟳ Сгенерировать</button>
+        <button class="back-btn" id="btn-muscles-home" aria-label="Вернуться на главную">← Выйти</button>
+      </div>
     </div>
     <div class="battery-wrap">
       <span class="battery-label">Заряд</span>
@@ -1820,6 +1870,24 @@ html, body {
     </div>
     <div class="scroll-body">
       <div class="stats-section" id="stats-content">
+        <!-- Контент рендерится динамически из JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCREEN: LOG — Журнал тренировок (последние 30 дней)
+       ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-log">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="logo">Последние 30 дней</div>
+        <div class="title">ЖУРНАЛ</div>
+      </div>
+      <button class="back-btn" id="btn-log-back" aria-label="Назад">← Назад</button>
+    </div>
+    <div class="scroll-body">
+      <div class="stats-section" id="log-content">
         <!-- Контент рендерится динамически из JS -->
       </div>
     </div>
@@ -2544,6 +2612,29 @@ const dayDescriptions = {
  */
 const DAYS_ORDER = ["Д1","Д2","Д3","Д4"];
 
+/**
+ * Центральный объект конфигурации.
+ * Все магические числа собраны здесь для удобства поддержки.
+ */
+const CONFIG = {
+  MAX_HEAT: 10,           // Максимальное значение горячести упражнения
+  SLOTS_PER_DAY: 6,       // Кол-во упражнений в одном дне
+  VARIANTS_PER_SLOT: 7,   // Кол-во вариантов на один слот
+  MAX_HISTORY: 100,       // Максимум записей в history
+  MAX_LOG_DAYS: 30,       // Сколько дней хранить в workout log
+  SETS_MIN: 2,            // Минимум подходов (настройка)
+  SETS_MAX: 6,            // Максимум подходов (настройка)
+  REST_MIN: 15,           // Минимум секунд отдыха (настройка)
+  REST_MAX: 300,          // Максимум секунд отдыха (настройка)
+  REST_STEP: 15,          // Шаг изменения таймера (сек)
+};
+
+/**
+ * Типы упражнений: compound (базовые) получают больше отдыха.
+ * Типы из workoutSchedule, которые считаются базовыми (compound).
+ */
+const COMPOUND_TYPES = new Set(['Жим', 'Тяга', 'Присед', 'Выпад']);
+
 /* ═══════════════════════════════════════════════════════════════════════════
    APP — Управление состоянием и данными
    ──────────────────────────────────────
@@ -2606,8 +2697,10 @@ const App = {
     weekStart: null,
     settings: {
       setsCount: 3,
-      restSeconds: 90,
+      restCompound: 90,    // Отдых для базовых (Жим, Тяга, Присед, Выпад)
+      restIsolation: 45,   // Отдых для изоляции (Разводка, Разгибание, Сгибание, Подъём)
     },
+    workoutLog: [],          // [{date, day, exercises}] — лог за последние 30 дней
     bannedVariants: {},  // { "Д1-1:2": true, ... }
     likedVariants:  {},  // { "Д1-1:0": true, ... }
     exerciseHeat:   {},  // { "chest-flat-barbell": 7, ... } — 0..10, горячесть упражнения
@@ -2642,6 +2735,15 @@ const App = {
         if (data.likedVariants)  this.persist.likedVariants  = data.likedVariants;
         if (data.exerciseHeat)   this.persist.exerciseHeat   = data.exerciseHeat;
         if (data.lastDecayMonth) this.persist.lastDecayMonth = data.lastDecayMonth;
+        if (data.workoutLog)     this.persist.workoutLog     = data.workoutLog;
+
+        /* Миграция: старый restSeconds → новые restCompound/restIsolation */
+        if (this.persist.settings.restSeconds && !this.persist.settings.restCompound) {
+          this.persist.settings.restCompound = this.persist.settings.restSeconds;
+          this.persist.settings.restIsolation = Math.max(CONFIG.REST_MIN, Math.round(this.persist.settings.restSeconds / 2));
+          delete this.persist.settings.restSeconds;
+          this.save();
+        }
       }
     } catch(e) {
       /* localStorage недоступен — работаем без персистенции */
@@ -2760,16 +2862,41 @@ const App = {
   /* Вспомогательные геттеры горячести */
   getHeat(imgSlug) { return this.persist.exerciseHeat[imgSlug] || 0; },
   addHeat(imgSlug) {
-    this.persist.exerciseHeat[imgSlug] = Math.min(10, this.getHeat(imgSlug) + 1);
+    this.persist.exerciseHeat[imgSlug] = Math.min(CONFIG.MAX_HEAT, this.getHeat(imgSlug) + 1);
   },
   /** Возвращает HTML-строку полоски активности для вставки в карточку */
   heatBarHTML(imgSlug, compact) {
-    const pct = this.getHeat(imgSlug) * 10;
+    const pct = this.getHeat(imgSlug) * (100 / CONFIG.MAX_HEAT);
     const h = compact ? '2px' : '3px';
     return `<div class="var-heat-row"${compact ? ' style="margin:3px 0 0;padding-left:0"' : ''}>` +
       (compact ? '' : '<span class="var-heat-label">АКТИВНОСТЬ</span>') +
       `<div class="var-heat-track" style="height:${h}">` +
       `<div class="var-heat-fill" style="width:${pct}%"></div></div></div>`;
+  },
+
+  /**
+   * Записывает завершённую тренировку в workoutLog.
+   * Хранит последние CONFIG.MAX_LOG_DAYS дней.
+   * Формат: { date: "2026-03-21", day: "Д1", exercises: [...] }
+   */
+  logWorkout(day, completedExercises) {
+    const today = new Date().toISOString().slice(0, 10);
+    this.persist.workoutLog.push({
+      date: today,
+      day: day,
+      exercises: completedExercises.map(ex => ({
+        muscle: ex.muscle,
+        movement: ex.movement,
+        type: ex.type,
+        sets: ex.sets.map(s => ({ weight: s.weight || 0, reps: s.reps || 0 }))
+      }))
+    });
+    /* Ограничение: удаляем записи старше MAX_LOG_DAYS */
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - CONFIG.MAX_LOG_DAYS);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    this.persist.workoutLog = this.persist.workoutLog.filter(e => e.date >= cutoffStr);
+    this.save();
   },
 
   /**
@@ -3207,11 +3334,19 @@ const UI = {
           </div>
         </div>
         <div class="setting-row">
-          <div class="setting-label">Таймер отдыха (сек)<small>от 30 до 300</small></div>
+          <div class="setting-label">Отдых: база (сек)<small>Жим, Тяга, Присед, Выпад</small></div>
           <div class="setting-control">
-            <button class="setting-btn" data-action="rest-minus" aria-label="Уменьшить">−</button>
-            <span class="setting-value" id="setting-rest">${s.restSeconds}</span>
-            <button class="setting-btn" data-action="rest-plus" aria-label="Увеличить">+</button>
+            <button class="setting-btn" data-action="rest-compound-minus" aria-label="Уменьшить">−</button>
+            <span class="setting-value" id="setting-rest-compound">${s.restCompound}</span>
+            <button class="setting-btn" data-action="rest-compound-plus" aria-label="Увеличить">+</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Отдых: изоляция (сек)<small>Разводка, Сгибание, Подъём</small></div>
+          <div class="setting-control">
+            <button class="setting-btn" data-action="rest-iso-minus" aria-label="Уменьшить">−</button>
+            <span class="setting-value" id="setting-rest-iso">${s.restIsolation}</span>
+            <button class="setting-btn" data-action="rest-iso-plus" aria-label="Увеличить">+</button>
           </div>
         </div>
       </div>
@@ -3246,6 +3381,70 @@ const UI = {
           <button class="btn btn-ghost" id="btn-clear-all" style="border-color:var(--red-dim);color:var(--red-dim)">Очистить</button>
         </div>
       </div>`;
+  },
+
+  /* ══════════════════════════════════════
+     renderLog — Журнал тренировок (30 дней)
+     ══════════════════════════════════════ */
+  renderLog() {
+    const container = document.getElementById('log-content');
+    const log = App.persist.workoutLog || [];
+
+    if (log.length === 0) {
+      container.innerHTML = `<div class="settings-empty" style="padding:32px 18px;text-align:center;color:var(--text-dim)">
+        Журнал пуст — завершите тренировку, чтобы увидеть записи</div>`;
+      return;
+    }
+
+    /* Группируем по дате */
+    const grouped = {};
+    log.forEach(entry => {
+      if (!grouped[entry.date]) grouped[entry.date] = [];
+      grouped[entry.date].push(entry);
+    });
+
+    /* Генерируем последние 30 дней */
+    const today = new Date();
+    let html = '';
+    for (let d = 0; d < CONFIG.MAX_LOG_DAYS; d++) {
+      const dt = new Date(today);
+      dt.setDate(dt.getDate() - d);
+      const dateStr = dt.toISOString().slice(0, 10);
+      const dayName = dt.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+
+      if (grouped[dateStr]) {
+        grouped[dateStr].forEach(entry => {
+          const totalVol = entry.exercises.reduce((sum, ex) =>
+            sum + ex.sets.reduce((s2, s) => s2 + (s.weight || 0) * (s.reps || 0), 0), 0);
+
+          html += `<div class="log-day log-day--active">
+            <div class="log-day-header">
+              <span class="log-date">${dayName}</span>
+              <span class="log-day-tag">${entry.day}</span>
+              ${totalVol > 0 ? `<span class="log-volume">${totalVol.toLocaleString('ru')} кг</span>` : ''}
+            </div>
+            <div class="log-exercises">`;
+          entry.exercises.forEach(ex => {
+            const setsStr = ex.sets
+              .filter(s => s.weight > 0 || s.reps > 0)
+              .map(s => `${s.weight}×${s.reps}`)
+              .join(', ');
+            html += `<div class="log-exercise">
+              <span class="log-ex-muscle">${ex.muscle}</span>
+              ${setsStr ? `<span class="log-ex-sets">${setsStr}</span>` : ''}
+            </div>`;
+          });
+          html += `</div></div>`;
+        });
+      } else {
+        html += `<div class="log-day log-day--rest">
+          <span class="log-date">${dayName}</span>
+          <span class="log-rest-label">отдых</span>
+        </div>`;
+      }
+    }
+
+    container.innerHTML = html;
   },
 
   /* ══════════════════════════════════════
@@ -3459,6 +3658,20 @@ const Workout = {
    *   ПРОВЕРЬ      — варианты, отмеченные "занято" (можно вернуть)
    *   ВЫПОЛНЕНО    — если слот завершён
    */
+  /** Генерирует общую часть карточки (body: текст + thumb) */
+  _cardBodyHTML(sl, variant, dimThumb) {
+    return `<div class="now-card-body">
+      <div class="now-card-text">
+        <div class="now-movement">${sl.movement}</div>
+        <div class="now-variant-name">${variant.name}</div>
+        <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
+      </div>
+      <div class="now-card-thumb${dimThumb ? ' now-card-thumb-dim' : ''}">
+        <img src="data:," alt="${variant.name}" data-fallback="exercise">
+      </div>
+    </div>`;
+  },
+
   render() {
     const list = document.getElementById('exercise-list');
     list.innerHTML = '';
@@ -3511,17 +3724,8 @@ const Workout = {
             <span class="now-var-counter">вариант ${varNum}/${totalVars}</span>
             <span class="now-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>
           </div>
-          <div class="now-card-body">
-            <div class="now-card-text">
-              <div class="now-movement">${sl.movement}</div>
-              <div class="now-variant-name">${variant.name}</div>
-              <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
-              ${App.heatBarHTML(variant.img, false)}
-            </div>
-            <div class="now-card-thumb">
-              <img src="data:," alt="${variant.name}" data-fallback="exercise">
-            </div>
-          </div>
+          ${this._cardBodyHTML(sl, variant, false)}
+          ${App.heatBarHTML(variant.img, false)}
           <div class="now-actions">
             <button class="btn btn-ghost" data-action="slot-busy" data-slot="${slotIdx}">⊘ Занято</button>
           </div>`;
@@ -3578,16 +3782,7 @@ const Workout = {
             <span class="exercise-type-badge">${sl.type}</span>
             <span class="check-busy-label">занято</span>
           </div>
-          <div class="now-card-body">
-            <div class="now-card-text">
-              <div class="now-movement">${sl.movement}</div>
-              <div class="now-variant-name">${variant.name}</div>
-              <div class="var-equipment-row">${variant.tags.map(t => `<span class="var-tag">${t}</span>`).join('')}</div>
-            </div>
-            <div class="now-card-thumb now-card-thumb-dim">
-              <img src="data:," alt="${variant.name}" data-fallback="exercise">
-            </div>
-          </div>
+          ${this._cardBodyHTML(sl, variant, true)}
           <div class="now-actions">
             <button class="btn btn-primary" data-action="check-start" data-slot="${slotIdx}" data-varidx="${b.idx}">→ Освободилось</button>
             <button class="btn btn-ghost" data-action="check-dismiss" data-slot="${slotIdx}" data-varidx="${b.idx}">✕ Пропустить</button>
@@ -3639,7 +3834,7 @@ const Workout = {
         const isLiked  = App.isLiked(varKey, i);
         const stars    = varPriority(i);
         const heat     = App.getHeat(v.img);                // 0–10
-        const heatPct  = heat * 10;                         // 0–100%
+        const heatPct  = heat * (100 / CONFIG.MAX_HEAT);     // 0–100%
         return `
         <div class="variation-card${isBanned ? ' variation-card--banned' : ''}"
              ${isBanned ? '' : `data-action="open-variation" data-varkey="${varKey}" data-varidx="${i}"`}
@@ -3897,7 +4092,11 @@ const Workout = {
    * По истечении — скрывает оверлей + haptic.
    */
   startRestTimer() {
-    const seconds = App.persist.settings.restSeconds;
+    const slot = App.state.slots[App.state.currentSlotIdx];
+    const isCompound = slot && COMPOUND_TYPES.has(slot.type);
+    const seconds = isCompound
+      ? App.persist.settings.restCompound
+      : App.persist.settings.restIsolation;
     const overlay = document.getElementById('rest-timer');
     const textEl = document.getElementById('timer-text');
     const ringEl = document.getElementById('timer-ring-fg');
@@ -4080,10 +4279,13 @@ const Workout = {
       totalVolume
     });
 
-    /* Ограничение: хранить не более 100 записей */
-    if (App.persist.history.length > 100) {
-      App.persist.history = App.persist.history.slice(-100);
+    /* Ограничение: хранить не более CONFIG.MAX_HISTORY записей */
+    if (App.persist.history.length > CONFIG.MAX_HISTORY) {
+      App.persist.history = App.persist.history.slice(-CONFIG.MAX_HISTORY);
     }
+
+    /* Записываем в workoutLog */
+    App.logWorkout(s.currentDay, completedExercises);
 
     App.clearProgress(s.currentDay);
     App.save();
@@ -4200,6 +4402,22 @@ const Workout = {
     App.saveProgress();
     UI.renderHome();
     UI.showScreen('screen-home');
+  },
+
+  /**
+   * Перегенерирует слоты текущего дня (сброс + новая генерация).
+   * Очищает сохранённый прогресс и строит слоты заново.
+   */
+  regenerate() {
+    const day = App.state.currentDay;
+    if (!day) return;
+    App.clearProgress(day);
+    App.state.slots = this.buildSlots(day);
+    App.state.currentSlotIdx = null;
+    App.updateBattery();
+    this.renderMuscles();
+    UI.toast('Тренировка перегенерирована');
+    UI.haptic(10);
   }
 };
 
@@ -4314,24 +4532,35 @@ document.getElementById('app').addEventListener('click', (e) => {
     /* ── Настройки: подходы ± ── */
     case 'sets-minus': {
       const s = App.persist.settings;
-      if (s.setsCount > 2) { s.setsCount--; App.save(); document.getElementById('setting-sets').textContent = s.setsCount; }
+      if (s.setsCount > CONFIG.SETS_MIN) { s.setsCount--; App.save(); document.getElementById('setting-sets').textContent = s.setsCount; }
       break;
     }
     case 'sets-plus': {
       const s = App.persist.settings;
-      if (s.setsCount < 6) { s.setsCount++; App.save(); document.getElementById('setting-sets').textContent = s.setsCount; }
+      if (s.setsCount < CONFIG.SETS_MAX) { s.setsCount++; App.save(); document.getElementById('setting-sets').textContent = s.setsCount; }
       break;
     }
 
-    /* ── Настройки: таймер отдыха ± (шаг 15 сек) ── */
-    case 'rest-minus': {
+    /* ── Настройки: таймер отдыха — база (compound) ── */
+    case 'rest-compound-minus': {
       const s = App.persist.settings;
-      if (s.restSeconds > 30) { s.restSeconds -= 15; App.save(); document.getElementById('setting-rest').textContent = s.restSeconds; }
+      if (s.restCompound > CONFIG.REST_MIN) { s.restCompound -= CONFIG.REST_STEP; App.save(); document.getElementById('setting-rest-compound').textContent = s.restCompound; }
       break;
     }
-    case 'rest-plus': {
+    case 'rest-compound-plus': {
       const s = App.persist.settings;
-      if (s.restSeconds < 300) { s.restSeconds += 15; App.save(); document.getElementById('setting-rest').textContent = s.restSeconds; }
+      if (s.restCompound < CONFIG.REST_MAX) { s.restCompound += CONFIG.REST_STEP; App.save(); document.getElementById('setting-rest-compound').textContent = s.restCompound; }
+      break;
+    }
+    /* ── Настройки: таймер отдыха — изоляция ── */
+    case 'rest-iso-minus': {
+      const s = App.persist.settings;
+      if (s.restIsolation > CONFIG.REST_MIN) { s.restIsolation -= CONFIG.REST_STEP; App.save(); document.getElementById('setting-rest-iso').textContent = s.restIsolation; }
+      break;
+    }
+    case 'rest-iso-plus': {
+      const s = App.persist.settings;
+      if (s.restIsolation < CONFIG.REST_MAX) { s.restIsolation += CONFIG.REST_STEP; App.save(); document.getElementById('setting-rest-iso').textContent = s.restIsolation; }
       break;
     }
   }
@@ -4354,6 +4583,20 @@ document.getElementById('btn-go-home').addEventListener('click', () => {
 
 /* Кнопка «Выйти» из screen-muscles → сохранить прогресс и вернуться на главную */
 document.getElementById('btn-muscles-home').addEventListener('click', () => Workout.goHome());
+
+/* Кнопка «Сгенерировать» — перегенерирует слоты текущего дня */
+document.getElementById('btn-regenerate').addEventListener('click', () => {
+  const day = App.state.currentDay;
+  if (!day) return;
+  const hasProgress = App.state.slots.some(sl => sl.done || sl.busy.length > 0);
+  if (hasProgress) {
+    UI.confirm('Перегенерировать?', 'Текущий прогресс тренировки будет сброшен. Продолжить?').then(ok => {
+      if (ok) Workout.regenerate();
+    });
+  } else {
+    Workout.regenerate();
+  }
+});
 
 /* Кнопка «Назад» на экране деталей (обзор) → вернуться к тренировке */
 document.getElementById('btn-cancel-exercise').addEventListener('click', () => UI.showScreen('screen-workout'));
@@ -4380,6 +4623,10 @@ document.getElementById('btn-stats-back').addEventListener('click', () => { UI.r
 /* Навигация: Настройки */
 document.getElementById('btn-settings').addEventListener('click', () => { UI.renderSettings(); UI.showScreen('screen-settings'); });
 document.getElementById('btn-settings-back').addEventListener('click', () => { UI.renderHome(); UI.showScreen('screen-home'); });
+
+/* Навигация: Журнал */
+document.getElementById('btn-log').addEventListener('click', () => { UI.renderLog(); UI.showScreen('screen-log'); });
+document.getElementById('btn-log-back').addEventListener('click', () => { UI.renderHome(); UI.showScreen('screen-home'); });
 
 /* Навигация: Каталог упражнений */
 document.getElementById('btn-catalog').addEventListener('click', () => { UI.renderCatalog(); UI.showScreen('screen-catalog'); });
