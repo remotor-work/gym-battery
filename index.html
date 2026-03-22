@@ -772,10 +772,13 @@ html, body {
 /* Filled — цвет и плавный градиент задаётся инлайн через hsl() */
 .him-seg--on { border: none; }
 
-/* На большой иллюстрации (экран подходов) — высота x1.4, длина x0.8 */
+/* На большой иллюстрации (экран подходов) — высота x1.54, длина x0.8 */
 .illust-wrap .heat-img-bar { width: 34%; }
-.illust-wrap .him-seg { height: 28px; }
+.illust-wrap .him-seg { height: 31px; }
 .var-card-thumb .him-seg { height: 14px; }
+/* Каталог — миниатюра 96×64 */
+.catalog-thumb { position: relative; }
+.catalog-thumb .him-seg { height: 8px; }
 
 .now-actions { display: flex; gap: 8px; margin-top: 10px; }
 .now-actions .btn { flex: 1; }
@@ -3543,6 +3546,7 @@ const UI = {
         <div class="catalog-item" data-action="open-catalog-detail" data-img="${v.img}">
           <div class="catalog-thumb">
             <img data-img="${v.img}" alt="${v.name}" data-fallback="exercise">
+            ${App.heatImgBarHTML(v.img)}
           </div>
           <div class="catalog-info">
             <div class="catalog-name">${v.name}</div>
@@ -3597,9 +3601,15 @@ const UI = {
     document.getElementById('cd-muscles').textContent = variant.muscles || '—';
     document.getElementById('cd-desc').textContent = variant.desc || '—';
 
-    /* 4. Загрузить картинку */
+    /* 4. Загрузить картинку + тепловой бар */
     var img = document.querySelector('#illust-catalog-detail img');
     ImgLoader.setSrc(img, 'assets/img/exercises/' + variant.img + '.png', variant.name);
+    var catalogIllust = document.getElementById('illust-catalog-detail');
+    if (catalogIllust) {
+      var existBar = catalogIllust.querySelector('.heat-img-bar');
+      if (existBar) existBar.remove();
+      catalogIllust.insertAdjacentHTML('beforeend', App.heatImgBarHTML(variant.img));
+    }
 
     /* 5. Показать экран */
     UI.showScreen('screen-catalog-detail');
