@@ -2875,22 +2875,25 @@ const App = {
   },
 
   /**
-   * Записывает завершённую тренировку в workoutLog.
+   * Записывает одно завершённое упражнение в workoutLog.
+   * Вызывается из completeExercise() — логируем сразу, не дожидаясь finish().
+   * Находит или создаёт запись за сегодня+день, дописывает упражнение.
    * Хранит последние CONFIG.MAX_LOG_DAYS дней.
-   * Формат: { date: "2026-03-21", day: "Д1", exercises: [...] }
    */
-  logWorkout(day, completedExercises) {
+  logExercise(day, exerciseData) {
     const today = new Date().toISOString().slice(0, 10);
-    this.persist.workoutLog.push({
-      date: today,
-      day: day,
-      exercises: completedExercises.map(ex => ({
-        name: ex.name || '',
-        muscle: ex.muscle,
-        movement: ex.movement,
-        type: ex.type,
-        sets: ex.sets.map(s => ({ weight: s.weight || 0, reps: s.reps || 0 }))
-      }))
+    /* Ищем существующую запись за сегодня + этот день */
+    let entry = this.persist.workoutLog.find(e => e.date === today && e.day === day);
+    if (!entry) {
+      entry = { date: today, day: day, exercises: [] };
+      this.persist.workoutLog.push(entry);
+    }
+    entry.exercises.push({
+      name: exerciseData.name || '',
+      muscle: exerciseData.muscle,
+      movement: exerciseData.movement,
+      type: exerciseData.type,
+      sets: exerciseData.sets.map(s => ({ weight: s.weight || 0, reps: s.reps || 0 }))
     });
     /* Ограничение: удаляем записи старше MAX_LOG_DAYS */
     const cutoff = new Date();
@@ -4266,14 +4269,19 @@ const Workout = {
     if (!prog.completedExercises) prog.completedExercises = [];
     /* Сохраняем данные завершённого упражнения */
     const _varName = _doneVar ? _doneVar.name : '';
-    prog.completedExercises.push({
+    const _exerciseData = {
       id: slot.id,
       name: _varName,
       movement: slot.movement,
       muscle: slot.muscle,
       type: slot.type,
       sets: [...s.setData]  /* Копия массива данных подходов */
-    });
+    };
+    prog.completedExercises.push(_exerciseData);
+
+    /* Сразу записываем в журнал — не ждём finish() */
+    App.logExercise(s.currentDay, _exerciseData);
+
     /* Очищаем промежуточный прогресс — упражнение полностью завершено */
     delete prog.inProgress;
     App.save();
@@ -4315,8 +4323,7 @@ const Workout = {
       App.persist.history = App.persist.history.slice(-CONFIG.MAX_HISTORY);
     }
 
-    /* Записываем в workoutLog */
-    App.logWorkout(s.currentDay, completedExercises);
+    /* workoutLog уже обновлён в completeExercise() — поупражненно */
 
     App.clearProgress(s.currentDay);
     App.save();
