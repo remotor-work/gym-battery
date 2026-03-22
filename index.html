@@ -3601,11 +3601,38 @@ function varPriorityHTML(varIdx) {
     + `<span class="priority-label">${PRIORITY_LABEL[n] || ''}</span>`;
 }
 
+/**
+ * Вычисляет score варианта для ранжирования при генерации.
+ *
+ * Формула:  priority×8 + liked×4 − heat×(1.5 − priority×0.2) + random(0…6)
+ *
+ * • priority×8      — звёзды = главный фактор (16–40)
+ * • liked +4        — бонус за лайк
+ * • heat penalty    — штраф за частое использование, уменьшенный для базовых:
+ *     5★ heat=10 → штраф 5  |  3★ heat=10 → штраф 9  |  1★ heat=10 → штраф 13
+ * • random(0…6)     — jitter для ротации (может поменять соседей местами)
+ *
+ * @param {number} varIdx  — индекс варианта (0–6)
+ * @param {string} varKey  — ключ слота ("Д1-1")
+ * @param {string} imgSlug — img поле варианта (для получения heat)
+ * @returns {number} — score (выше = лучше)
+ */
+function varScore(varIdx, varKey, imgSlug) {
+  const p    = varPriority(varIdx);
+  const liked = App.isLiked(varKey, varIdx) ? 4 : 0;
+  const heat  = App.getHeat(imgSlug);
+  const heatCoeff = 1.5 - p * 0.2;   // 5★→0.5, 4★→0.7, 3★→0.9, 2★→1.1
+  const penalty   = heat * heatCoeff;
+  const jitter    = Math.random() * 6;
+  return p * 8 + liked - penalty + jitter;
+}
+
 const Workout = {
 
   /**
    * Строит массив слотов для тренировочного дня.
-   * Каждый слот — одно упражнение с очередью вариантов по приоритету.
+   * Каждый слот — одно упражнение с очередью вариантов, ранжированных
+   * по score-формуле (звёзды + лайк − heat-штраф + случайность).
    *
    * @param {string} day — тренировочный день ("Д1", "Д2", "Д3", "Д4")
    * @returns {Array} — массив слотов
@@ -3620,9 +3647,9 @@ const Workout = {
           .map((_, i) => i)
           .filter(i => !App.isBanned(varKey, i))
           .sort((a, b) => {
-            const pa = varPriority(a), pb = varPriority(b);
-            if (pa !== pb) return pb - pa;
-            return (App.isLiked(varKey, b) ? 1 : 0) - (App.isLiked(varKey, a) ? 1 : 0);
+            const sa = varScore(a, varKey, vars[a].img);
+            const sb = varScore(b, varKey, vars[b].img);
+            return sb - sa;  // выше score → раньше в очереди
           }),
         busy: [],           // [{idx}] — варианты, отмеченные "занято" → зона ПРОВЕРЬ
         done: false,        // слот выполнен
