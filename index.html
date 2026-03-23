@@ -603,6 +603,25 @@ html, body {
 }
 .cal-start-btn:disabled:active { transform: none; }
 
+/* Кнопка экстра-тренировки — вторичная, под основной */
+.cal-extra-btn {
+  width: 100%; margin-top: 8px; padding: 14px;
+  border-radius: var(--r);
+  background: transparent;
+  border: 1px solid var(--led-dim);
+  color: var(--led-dim);
+  font-family: var(--orb); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cal-extra-btn:active { background: var(--bg2); border-color: var(--led); color: var(--led); }
+.cal-extra-btn:disabled {
+  border-color: var(--border); color: var(--text-dim);
+  cursor: default;
+}
+.cal-extra-btn:disabled:active { background: transparent; }
+
 /* Анимация появления элемента */
 @keyframes slideIn {
   from { opacity:0; transform: translateY(5px); }
@@ -1656,6 +1675,7 @@ html, body {
       <div id="cal-week-info" class="cal-week-info"></div>
       <div id="cal-preview" class="cal-preview" style="display:none"></div>
       <button class="cal-start-btn" id="cal-start-btn"></button>
+      <button class="cal-extra-btn" id="cal-extra-btn"></button>
     </div>
   </div>
 
@@ -2523,6 +2543,130 @@ const exerciseVariations = {
 };
 
 
+/* ── Экстра-упражнения: пресс + изоляция (12 ключей × 7 вариантов) ──────── */
+Object.assign(exerciseVariations, {
+  /* ── ПРЕСС: скручивания / передняя стенка ── */
+  'Э-abs-front': [
+    { img:'abs-crunch',          name:'Скручивания (Crunch)',                  tags:['Коврик','Вес тела'],              muscles:'Прямая мышца живота (верх)',    desc:'Лёжа на спине, ноги согнуты. Руки за ухом. Скручивай верхнюю часть торса к коленям, не тяни за шею. Медленно возвращайся.' },
+    { img:'abs-bicycle',         name:'Велосипед (Bicycle Crunch)',             tags:['Коврик','Вес тела'],              muscles:'Прямая + косые мышцы живота',   desc:'Лёжа, руки за голову. Попеременно тяни локоть к противоположному колену, разгибая другую ногу. Ротация корпуса, не шеи.' },
+    { img:'abs-cable-crunch',    name:'Скручивания на блоке (Cable Crunch)',    tags:['Верхний блок','Канат','На коленях'], muscles:'Прямая мышца живота',        desc:'Встань на колени лицом к блоку, канат у висков. Скручивай корпус вниз, сгибая поясницу, а не бёдра. Пик сокращения внизу.' },
+    { img:'abs-decline-crunch',  name:'Скручивания на наклонной (Decline Crunch)', tags:['Скамья наклонная'],          muscles:'Прямая мышца живота (верх)',    desc:'Зафикси ноги на наклонной скамье. Руки у груди или за головой. Скручивайся вверх до 30–40°, медленно опускайся.' },
+    { img:'abs-ab-wheel',        name:'Роликовый пресс (Ab Wheel Rollout)',     tags:['Ролик для пресса','Коврик'],      muscles:'Прямая мышца живота, стабилизаторы', desc:'Колени на полу, держи ролик. Медленно выкати вперёд до почти горизонтального положения, не проваливай поясницу. Сожми пресс и вернись.' },
+    { img:'abs-v-up',            name:'V-подъём (V-Up)',                        tags:['Коврик','Вес тела'],              muscles:'Прямая мышца живота (вся длина)', desc:'Лёжа, руки вдоль тела. Одновременно поднимай прямые ноги и торс, тянись руками к носкам. Удержи пик — медленно опускайся.' },
+    { img:'abs-russian-twist',   name:'Русский твист (Russian Twist)',          tags:['Коврик','Гантель / медбол'],     muscles:'Косые мышцы живота',           desc:'Сядь, слегка откинься назад, ноги полусогнуты. Держи вес у груди. Поворачивай корпус из стороны в сторону — касайся весом пола рядом с бедром.' }
+  ],
+  /* ── ПРЕСС: подъёмы ног / нижняя стенка ── */
+  'Э-abs-legs': [
+    { img:'abs-hanging-knee',    name:'Подъём колен в висе (Hanging Knee Raise)', tags:['Перекладина','Брусья'],         muscles:'Прямая мышца живота (низ), подвздошно-поясничная', desc:'Вис на перекладине. Подтягивай колени к груди, скручивая таз вверх. Медленно опускай — не раскачивайся.' },
+    { img:'abs-hanging-leg',     name:'Подъём прямых ног в висе (Hanging Leg Raise)', tags:['Перекладина'],             muscles:'Прямая мышца живота (низ)',     desc:'Вис на прямых руках. Держи ноги прямыми, подними их параллельно полу или выше. Контролируй опускание — не бросай.' },
+    { img:'abs-lying-leg-raise', name:'Подъём ног лёжа (Lying Leg Raise)',       tags:['Коврик','Вес тела'],              muscles:'Прямая мышца живота (низ), сгибатели бедра', desc:'Лёжа на спине, руки под ягодицами. Подними прямые ноги до 90°, медленно опускай почти до пола — не касаясь.' },
+    { img:'abs-reverse-crunch',  name:'Обратные скручивания (Reverse Crunch)',   tags:['Коврик','Вес тела'],              muscles:'Прямая мышца живота (низ)',     desc:'Лёжа, ноги подняты под 90°. Скручивай таз вверх, поднимая ягодицы от пола. Медленно возвращайся — таз не шлёпай.' },
+    { img:'abs-toes-to-bar',     name:'Подъём носков к перекладине (Toes-to-Bar)', tags:['Перекладина'],                muscles:'Пресс (вся длина), широчайшие', desc:'Вис на перекладине. Подними прямые ноги, касаясь носками перекладины. Максимально сложное упражнение, требует гибкости.' },
+    { img:'abs-knee-to-elbow',   name:'Колено к локтю в висе (Knee-to-Elbow)',  tags:['Перекладина'],                   muscles:'Косые мышцы живота, нижний пресс', desc:'Вис на перекладине. Поочерёдно тяни каждое колено к одноимённому локтю с ротацией корпуса. Медленно и под контролем.' },
+    { img:'abs-dragon-flag',     name:'Флаг дракона (Dragon Flag)',              tags:['Скамья','Вес тела'],              muscles:'Вся передняя стенка живота, стабилизаторы', desc:'Держись за скамью над головой. Подними тело до вертикали на лопатках. Медленно опускай прямое тело — пресс в постоянном напряжении.' }
+  ],
+  /* ── ПРЕСС: планки / кор ── */
+  'Э-abs-plank': [
+    { img:'abs-plank',           name:'Планка (Plank)',                          tags:['Коврик','Вес тела'],              muscles:'Поперечная мышца живота, кор целиком', desc:'Упор лёжа на предплечьях. Тело прямое — не поднимай таз и не проваливай поясницу. Дыши. Цель: статическое удержание 30–60 с.' },
+    { img:'abs-side-plank',      name:'Боковая планка (Side Plank)',             tags:['Коврик','Вес тела'],              muscles:'Косые мышцы живота, ягодичные', desc:'Опора на предплечье и боковую поверхность стопы. Тело прямое, бедро не опускай. Держи каждую сторону отдельно.' },
+    { img:'abs-rkc-plank',       name:'RKC Планка (RKC Plank)',                  tags:['Коврик','Вес тела'],              muscles:'Поперечная мышца живота (максимум)', desc:'Стандартная планка на предплечьях, но: сожми ягодицы, напряги квадрицепсы, тяни локти к носкам (не двигая их). Максимальное напряжение кора.' },
+    { img:'abs-shoulder-tap',    name:'Планка с тапами (Plank Shoulder Tap)',    tags:['Коврик','Вес тела'],              muscles:'Кор, стабилизаторы плечевого пояса', desc:'Упор на прямых руках. Попеременно касайся рукой противоположного плеча — не вращай корпус и не качайся бёдрами.' },
+    { img:'abs-mountain-climber',name:'Горная альпинистка (Mountain Climber)',   tags:['Коврик','Вес тела'],              muscles:'Пресс, сгибатели бедра, кор',  desc:'Упор на прямых руках, планка. Попеременно подтягивай колено к груди быстрым движением. Спину держи ровно — темп высокий.' },
+    { img:'abs-dead-bug',        name:'Мёртвый жук (Dead Bug)',                  tags:['Коврик','Вес тела'],              muscles:'Поперечная мышца живота, кор', desc:'Лёжа на спине, руки вверх, ноги под 90°. Одновременно опускай противоположную руку и ногу почти до пола, не отрывая поясницу. Медленно.' },
+    { img:'abs-bear-crawl',      name:'Медвежья ходьба (Bear Crawl Hold)',       tags:['Коврик','Вес тела'],              muscles:'Кор, плечи, сгибатели бедра',  desc:'Упор на четвереньках, колени на 2–3 см от пола. Удерживай эту позицию (статика) или делай маленькие шаги вперёд-назад.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: боковые дельты ── */
+  'Э-lateral': [
+    { img:'shoulder-lateral-db',      name:'Разведение с гантелями стоя (Lateral Raise)',        tags:['Гантели','Стоя'],           muscles:'Боковой пучок дельтовидной',  desc:'Гантели вдоль тела, небольшой наклон в локтях. Подними руки через стороны до параллели с полом. Не поднимай плечи, не раскачивайся.' },
+    { img:'shoulder-lateral-cable',   name:'Разведение на блоке (Cable Lateral Raise)',          tags:['Нижний блок'],              muscles:'Боковой пучок дельтовидной',  desc:'Блок у лодыжки с одной стороны, тяни рукой через тело в сторону до параллели. Постоянное натяжение троса даёт лучшую стимуляцию, чем гантели.' },
+    { img:'shoulder-lateral-machine', name:'Разведение в тренажёре (Machine Lateral Raise)',     tags:['Тренажёр'],                 muscles:'Боковой пучок дельтовидной',  desc:'Сядь в тренажёр, локти на подушках. Поднимай руки через стороны. Тренажёр обеспечивает постоянное сопротивление без риска читинга.' },
+    { img:'shoulder-lateral-seated',  name:'Разведение с гантелями сидя (Seated Lateral Raise)', tags:['Гантели','Скамья'],         muscles:'Боковой пучок дельтовидной',  desc:'Сидя на краю скамьи исключает раскачку. Небольшой наклон вперёд — лучше включает боковой пучок. Движение то же, что стоя.' },
+    { img:'shoulder-upright-row-narrow', name:'Тяга к подбородку узким хватом (Narrow Upright Row)', tags:['Штанга / гантели'],   muscles:'Боковые дельты, трапеции',   desc:'Хват уже ширины плеч. Тяни штангу вертикально к подбородку, локти ведут движение вверх. Узкий хват акцентирует дельты, не трапеции.' },
+    { img:'shoulder-y-raise',          name:'Y-подъём (Y-Raise)',                                tags:['Гантели / резина','Лёжа'], muscles:'Боковые и задние дельты, ротаторная манжета', desc:'Лёжа лицом вниз на наклонной скамье или стоя в наклоне. Поднимай прямые руки по диагонали вверх (форма Y). Отличная профилактика плеч.' },
+    { img:'shoulder-leaning-raise',    name:'Разведение в наклоне боком (Leaning Raise)',        tags:['Гантель','Стойка'],         muscles:'Боковой пучок дельтовидной',  desc:'Держись за стойку свободной рукой, тело в боковом наклоне. Тяни гантель от тела вверх. Наклон растягивает дельту в нижней точке.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: задняя дельта ── */
+  'Э-rear-delt': [
+    { img:'shoulder-rear-bent',        name:'Разведение в наклоне (Bent-Over Rear Delt Raise)',  tags:['Гантели'],                  muscles:'Задний пучок дельтовидной',   desc:'Наклонись до параллели с полом, спина прямая. Разводи гантели через стороны. Локти слегка согнуты, движение строго через стороны.' },
+    { img:'shoulder-face-pull',        name:'Face Pull с канатом (Cable Face Pull)',              tags:['Верхний блок','Канат'],     muscles:'Задняя дельта, ротаторная манжета, ромбовидные', desc:'Блок на уровне лица, канат. Тяни к лицу с ротацией предплечий наружу — локти выше плеч. Ключевое упражнение для здоровья плечевого сустава.' },
+    { img:'shoulder-reverse-pec-deck', name:'Разведение в тренажёре (Reverse Pec Deck)',          tags:['Тренажёр'],                 muscles:'Задний пучок дельтовидной',   desc:'Сядь лицом к тренажёру, развернув рукоятки. Разводи руки назад через стороны. Тренажёр идеален для изоляции задней дельты.' },
+    { img:'shoulder-rear-lying',       name:'Разведение лёжа лицом вниз (Prone Y/T Raise)',      tags:['Гантели','Скамья'],         muscles:'Задняя дельта, ромбовидные',  desc:'Лёжа лицом вниз на наклонной скамье. Разводи гантели в стороны (T) или по диагонали (Y). Лёгкий вес — акцент на задней дельте.' },
+    { img:'shoulder-rear-cable',       name:'Разведение на нижнем блоке (Low Cable Rear Raise)',  tags:['Нижний блок'],              muscles:'Задний пучок дельтовидной',   desc:'Наклонись, блок у пола. Тяни рукой через тело вверх и в сторону. Другая рука удерживает стойку. Постоянное натяжение троса.' },
+    { img:'shoulder-rear-incline',     name:'Разведение на наклонной (Incline Rear Delt Raise)', tags:['Гантели','Наклонная скамья'], muscles:'Задняя дельта, ромбовидные', desc:'Лёжи на животе на наклонной скамье 30–45°. Гантели свисают вниз. Разводи руки через стороны — проще держать спину прямо, чем в наклоне стоя.' },
+    { img:'shoulder-w-raise',          name:'W-подъём с гантелями (W-Raise)',                    tags:['Гантели','Наклонная скамья'], muscles:'Задняя дельта, ромбовидные, бицепс', desc:'Лёжи на наклонной лицом вниз. Руки свисают. Согни локти под 90° и разводи их вверх и в стороны — форма W. Тяни лопатки к позвоночнику.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: икры ── */
+  'Э-calves': [
+    { img:'calves-standing',     name:'Подъём на носки стоя (Standing Calf Raise)',     tags:['Тренажёр / степ'],          muscles:'Икроножная мышца',             desc:'Стой на краю степа или платформы. Опускай пятки ниже уровня платформы — растяжка. Поднимайся на максимальную высоту. Не скачи — контролируй.' },
+    { img:'calves-seated',       name:'Подъём на носки сидя (Seated Calf Raise)',        tags:['Тренажёр'],                 muscles:'Камбаловидная мышца',          desc:'Сидя, колени под подушкой. Опускай пятки максимально вниз, поднимай максимально вверх. Согнутое колено переносит нагрузку на камбаловидную.' },
+    { img:'calves-leg-press',    name:'Подъём на носки в жиме ног (Leg Press Calf)',     tags:['Тренажёр жим ног'],         muscles:'Икроножная мышца',             desc:'В тренажёре жим ног, ноги у края платформы. Разгибай и сгибай стопы без полного разгибания колен. Большой диапазон нагрузки.' },
+    { img:'calves-single-leg',   name:'Одноногий подъём на носок (Single-Leg Calf Raise)', tags:['Степ / стена'],           muscles:'Икроножная (асимметрично)',    desc:'Балансируй на одной ноге на краю ступени, держись за стену. Полное опускание и подъём. Самый эффективный вариант без оборудования.' },
+    { img:'calves-donkey',       name:'Donkey Calf Raise',                                tags:['Тренажёр / партнёр'],      muscles:'Икроножная мышца (пик)',       desc:'Наклонись вперёд, партнёр сидит на пояснице. Выполняй подъёмы на носки. Наклон торса максимально растягивает икроножную мышцу.' },
+    { img:'calves-smith',        name:'Подъём на носки в Смите (Smith Machine Calf)',    tags:['Машина Смита','Степ'],      muscles:'Икроножная мышца',             desc:'Штанга на плечах, ноги на краю степа. Медленный контролируемый подъём. Загрузка выше, чем с гантелями — добавляй вес постепенно.' },
+    { img:'calves-tibialis',     name:'Обратный подъём (Tibialis Raise)',                tags:['Стена'],                    muscles:'Передняя большеберцовая',      desc:'Прижмись спиной к стене, пятки впереди на 30–40 см. Поднимай носки максимально вверх. Прорабатывает переднюю часть голени — важен для баланса.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: бицепс (дополнительно) ── */
+  'Э-bicep': [
+    { img:'bicep-hammer',        name:'Молоток (Hammer Curl)',                           tags:['Гантели'],                  muscles:'Брахиалис, брахирадиалис, бицепс', desc:'Гантели нейтральным хватом (ладони смотрят внутрь). Сгибай не разворачивая запястья. Молоток лучше прокачивает брахиалис, добавляя объём.' },
+    { img:'bicep-concentration',  name:'Концентрированное сгибание (Concentration Curl)', tags:['Гантель','Скамья'],        muscles:'Бицепс (пик)',                 desc:'Сидя, локоть упирается во внутреннюю поверхность бедра. Сгибай медленно до полного сокращения. Исключает читинг — максимальная изоляция.' },
+    { img:'bicep-spider',         name:'Паук (Spider Curl)',                              tags:['Штанга / гантели','Скамья'], muscles:'Бицепс (растяжка в нижней точке)', desc:'Лёжи лицом вниз на наклонной скамье 45°, руки свисают. Сгибай — бицепс растянут при каждом повторе. Сложнее, чем обычные сгибания.' },
+    { img:'bicep-cable',          name:'Сгибание на блоке (Cable Curl)',                  tags:['Нижний блок'],              muscles:'Бицепс',                       desc:'Нижний блок, прямой гриф или канат. Постоянное натяжение по всей амплитуде — в отличие от гантелей нет мёртвой точки вверху.' },
+    { img:'bicep-reverse',        name:'Обратное сгибание (Reverse Curl)',                tags:['Штанга / гантели'],         muscles:'Брахиалис, брахирадиалис',     desc:'Пронированный хват (ладони вниз). Сгибай, не разворачивая запястья. Смещает нагрузку с бицепса на брахиалис и предплечья.' },
+    { img:'bicep-preacher',       name:'Скамья Скотта (Preacher Curl)',                   tags:['Скамья Скотта','Штанга / гантель'], muscles:'Бицепс (нижний пучок)',  desc:'Плечо лежит на подушке скамьи. Сгибай, не отрывая плечо. Скамья Скотта изолирует нижнюю часть бицепса и исключает читинг.' },
+    { img:'bicep-incline',        name:'Сгибание на наклонной (Incline Dumbbell Curl)',   tags:['Гантели','Наклонная скамья'], muscles:'Бицепс (длинная головка)',    desc:'Лёжи на наклонной 45°, руки свисают. Бицепс растянут в начальном положении. Сгибай — длинная головка под максимальной нагрузкой.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: трицепс (дополнительно) ── */
+  'Э-tricep': [
+    { img:'tricep-overhead',     name:'Разгибание над головой (Overhead Tricep Extension)', tags:['Гантель / штанга'],      muscles:'Трицепс (длинная головка)',    desc:'Гантель обеими руками над головой, локти у ушей. Опусти за голову — растяжка длинной головки. Разгибай полностью. Следи за локтями — не расставляй.' },
+    { img:'tricep-french',       name:'Французский жим (French Press)',                   tags:['Штанга / гантели','Скамья'], muscles:'Трицепс (акцент на длинной)', desc:'Лёжа, штанга опускается ко лбу (skull crusher) или за голову. Локти строго вверх. Разгибай только в локтевом суставе.' },
+    { img:'tricep-kickback',     name:'Кикбэк с гантелью (Tricep Kickback)',              tags:['Гантель','Скамья'],         muscles:'Трицепс (внешняя голова)',     desc:'В наклоне, плечо параллельно полу. Разгибай предплечье назад до полного выпрямления. Задержи вверху. Маленький вес, максимальный контроль.' },
+    { img:'tricep-pushdown',     name:'Жим на блоке вниз (Tricep Pushdown)',              tags:['Верхний блок','Канат / гриф'], muscles:'Трицепс (внешние головки)',  desc:'Верхний блок, канат или прямой гриф. Прижми локти к корпусу. Разгибай только в локтях — от уровня груди вниз до полного выпрямления.' },
+    { img:'tricep-skull',        name:'Skull Crusher (EZ-гриф)',                          tags:['EZ-гриф','Скамья'],         muscles:'Трицепс (медиальная головка)', desc:'Лёжа, EZ-гриф опускается ко лбу. Локти строго вверх, не расходятся. Медленный эксцентрик. Тяжелее и опаснее французского — контроль обязателен.' },
+    { img:'tricep-cable-overhead', name:'Разгибание на блоке над головой (Cable Overhead Ext)', tags:['Верхний блок','Канат'], muscles:'Трицепс (длинная головка)', desc:'Верхний блок, встань спиной, канат за голову. Разгибай руки вперёд. Постоянное натяжение при растяжке длинной головки — хорошо дополняет pushdown.' },
+    { img:'tricep-dip-weighted', name:'Отжимания на брусьях (Weighted Dip)',              tags:['Брусья','Пояс с весом'],    muscles:'Трицепс, нижняя грудь (от наклона)', desc:'Вертикальный корпус — акцент трицепс. Опускайся до 90° в локте, полное разгибание вверху. С отягощением через пояс.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: грудь (изоляция) ── */
+  'Э-chest-fly': [
+    { img:'chest-cable-fly-mid',  name:'Сведение на блоке горизонтально (Cable Fly Mid)', tags:['Блоки на уровне плеч'],   muscles:'Грудь (средний пучок)',        desc:'Блоки на уровне плеч, встань в середине. Своди руки перед собой по дуге — локти слегка согнуты. Не сталкивай рукояти, фиксируй пик.' },
+    { img:'chest-cable-fly-low',  name:'Сведение снизу вверх (Cable Fly Low-to-High)',    tags:['Нижний блок'],            muscles:'Верхняя часть груди',          desc:'Блоки у пола. Тяни руки вверх и к центру по дуге. Лучше изолирует верхний пучок груди, чем жим на наклонной.' },
+    { img:'chest-cable-fly-high', name:'Сведение сверху вниз (Cable Fly High-to-Low)',    tags:['Верхний блок'],           muscles:'Нижняя часть груди',           desc:'Блоки выше головы. Тяни руки вниз и к центру — форма X. Акцент на нижнюю часть и внутренние линии груди.' },
+    { img:'chest-db-fly-flat',    name:'Разведение с гантелями горизонтально (DB Fly Flat)', tags:['Гантели','Горизонтальная скамья'], muscles:'Грудь (средний пучок)', desc:'Лёжа горизонтально, гантели над грудью. Разводи по дуге вниз — широкие локти. Лёгкий вес, большая амплитуда. Растяжка в нижней точке.' },
+    { img:'chest-db-fly-incline', name:'Разведение на наклонной (Incline DB Fly)',         tags:['Гантели','Наклонная скамья'], muscles:'Верхняя часть груди',      desc:'Угол скамьи 30–45°. Разведи гантели по дуге вниз, растягивая верхнюю грудь. Не опускай ниже уровня плеч во избежание травмы.' },
+    { img:'chest-pec-deck',       name:'Pec Deck (тренажёр для сведения)',                 tags:['Тренажёр'],               muscles:'Грудь (акцент внутренних волокон)', desc:'Сядь, локти на подушках. Своди руки перед собой до касания. Тренажёр идеален для "добивки" после базовых упражнений.' },
+    { img:'chest-pullover-db',    name:'Пуловер с гантелью (DB Pullover)',                 tags:['Гантель','Горизонтальная скамья'], muscles:'Грудь + широчайшие',    desc:'Лёжа поперёк скамьи на лопатках. Гантель над грудью, опускай прямыми руками за голову. Растяжка груди и широчайших одновременно.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: спина (изоляция) ── */
+  'Э-back-iso': [
+    { img:'back-straight-pulldown',name:'Тяга прямыми руками (Straight-Arm Pulldown)',    tags:['Верхний блок','Канат'],   muscles:'Широчайшие, большая круглая',  desc:'Верхний блок, стой прямо. Тяни прямые руки вниз, прижимая к бёдрам. Локти не сгибаются — только плечевой сустав. Отличная изоляция широчайших.' },
+    { img:'back-hyperextension',   name:'Гиперэкстензия (Hyperextension)',                tags:['Тренажёр гиперэкстензии'], muscles:'Разгибатели позвоночника, ягодицы, бицепс бедра', desc:'Зафикси ноги, тело горизонтально. Опускай корпус вниз — растяжка. Поднимай до прямой линии (не перегибайся). Можно добавить вес к груди.' },
+    { img:'back-shrug-db',         name:'Шраги с гантелями (Dumbbell Shrug)',             tags:['Гантели'],                muscles:'Верхние трапеции',             desc:'Гантели вдоль бёдер. Поднимай плечи максимально вверх — к ушам. Не вращай, не наклоняй шею. Задержи вверху 1 секунду.' },
+    { img:'back-shrug-bar',        name:'Шраги со штангой (Barbell Shrug)',               tags:['Штанга'],                 muscles:'Верхние трапеции',             desc:'Штанга перед бёдрами. Поднимай плечи чисто вверх. Большой вес возможен — но не тяни штангу вверх, только пожимание плечами.' },
+    { img:'back-good-morning',     name:'Наклон со штангой (Good Morning)',               tags:['Штанга'],                 muscles:'Разгибатели позвоночника, бицепс бедра', desc:'Штанга на плечах, ноги чуть согнуты. Наклоняйся вперёд, сгибая в тазобедренном суставе — спина прямая. Лёгкий вес, контроль поясницы.' },
+    { img:'back-reverse-hyper',    name:'Обратная гиперэкстензия (Reverse Hyper)',        tags:['Тренажёр / скамья'],      muscles:'Разгибатели позвоночника, ягодицы, бицепс бедра', desc:'Торс на платформе, ноги свисают. Поднимай ноги до горизонтали, сжимая ягодицы. Декомпрессия позвоночника + задняя цепь.' },
+    { img:'back-pullover-cable',   name:'Пуловер на блоке (Cable Pullover)',              tags:['Верхний блок','Прямой гриф'], muscles:'Широчайшие, большая круглая', desc:'Верхний блок, наклонись вперёд 45°. Тяни прямые руки вниз по дуге к бёдрам. Постоянное натяжение и контроль движения.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: ягодицы (изоляция) ── */
+  'Э-glute': [
+    { img:'glute-bridge',        name:'Ягодичный мостик (Glute Bridge)',                  tags:['Коврик','Вес тела / штанга'], muscles:'Ягодицы, бицепс бедра',      desc:'Лёжа на спине, ноги согнуты. Поднимай таз, сжимая ягодицы вверху. Опускай, не касаясь пола. Можно добавить штангу на таз.' },
+    { img:'glute-hip-thrust',    name:'Hip Thrust со штангой (Barbell Hip Thrust)',        tags:['Штанга','Скамья'],          muscles:'Ягодицы (максимально)',        desc:'Плечи на скамье, штанга на тазу. Опускай таз к полу — поднимай вверх, разгибая бёдра. Лучшее упражнение для ягодичных по ЭМГ.' },
+    { img:'glute-kickback',      name:'Кикбэк на блоке (Cable Kickback)',                  tags:['Нижний блок','Ankle cuff'], muscles:'Большая ягодичная',            desc:'Манжет на лодыжке, встань лицом к блоку. Отводи ногу назад прямую, не наклоняя корпус. Ягодицы в верхней точке сжимай.' },
+    { img:'glute-fire-hydrant',  name:'Fire Hydrant',                                      tags:['Коврик','Вес тела'],        muscles:'Средняя ягодичная, отводящие', desc:'На четвереньках. Поднимай согнутую ногу в сторону — как собака у столба. Удержи вверху, медленно опусти. Не поворачивай таз.' },
+    { img:'glute-abduction',     name:'Отведение ноги на блоке (Cable Hip Abduction)',     tags:['Нижний блок','Ankle cuff'], muscles:'Средняя ягодичная',            desc:'Манжет на лодыжке, боком к блоку. Отводи рабочую ногу в сторону поперёк тела. Стоящая нога прямая, корпус не наклоняй.' },
+    { img:'glute-single-bridge', name:'Одноногий мостик (Single-Leg Glute Bridge)',        tags:['Коврик','Вес тела'],        muscles:'Ягодицы (асимметрично)',       desc:'Лёжа на спине, одна нога выпрямлена. Поднимай таз на опорной ноге. Сложнее обычного мостика — нагрузка на каждую ягодицу отдельно.' },
+    { img:'glute-donkey-kick',   name:'Donkey Kick',                                       tags:['Коврик','Блок / вес тела'], muscles:'Большая ягодичная',            desc:'На четвереньках. Поднимай согнутую ногу вертикально вверх, пятка к потолку. Сожми ягодицу вверху. Коленный угол 90°.' }
+  ],
+  /* ── ИЗОЛЯЦИЯ: предплечья ── */
+  'Э-forearm': [
+    { img:'forearm-wrist-curl',  name:'Сгибание запястий (Wrist Curl)',                    tags:['Штанга / гантели','Скамья'], muscles:'Сгибатели предплечья',        desc:'Предплечья на скамье, кисти за краем. Сгибай запястья вверх — разгибай вниз. Маленький вес, большой диапазон. Медленно.' },
+    { img:'forearm-wrist-ext',   name:'Разгибание запястий (Reverse Wrist Curl)',           tags:['Штанга / гантели','Скамья'], muscles:'Разгибатели предплечья',       desc:'То же положение, но ладони вниз. Поднимай тыл кисти вверх. Прорабатывает обратную сторону предплечья — важно для баланса.' },
+    { img:'forearm-reverse-curl',name:'Обратное сгибание (Reverse Curl)',                  tags:['Штанга / гантели'],         muscles:'Брахиалис, разгибатели предплечья', desc:'Пронированный хват (ладони вниз). Сгибай руки как обычно. Нагрузка переносится с бицепса на брахиалис и предплечья.' },
+    { img:'forearm-farmer',      name:'Прогулка фермера (Farmer\'s Carry)',                tags:['Гантели / гири'],           muscles:'Кисть, предплечье, трапеции', desc:'Тяжёлые гантели в каждой руке. Иди ровно, не раскачивайся. Статическая нагрузка на кисть и предплечье лучше динамики для хвата.' },
+    { img:'forearm-dead-hang',   name:'Вис на перекладине (Dead Hang)',                    tags:['Перекладина'],              muscles:'Кисть, предплечье, широчайшие (растяжка)', desc:'Просто вис на перекладине на максимальное время. Отличная тренировка хвата и декомпрессия позвоночника.' },
+    { img:'forearm-plate-pinch', name:'Щипковый хват блина (Plate Pinch)',                 tags:['Блин 5–10 кг'],             muscles:'Пальцы, кисть',               desc:'Держи блин пальцами (не всей ладонью) — 10–20 секунд в каждой руке. Специфическая тренировка щипкового хвата.' },
+    { img:'forearm-towel-pullup',name:'Подтягивание с полотенцем (Towel Pull-Up)',          tags:['Перекладина','Полотенце'],  muscles:'Кисть, предплечье, широчайшие', desc:'Перекинь полотенце через перекладину, держи оба конца. Подтягивайся. Нестабильный хват максимально нагружает предплечья и кисть.' }
+  ]
+});
+
 /* ===[SECTION:SCHEDULE]=== Расписание тренировок + названия дней ══════════
    ────────────────────────────────────────
    Объект-расписание: ключ = номер тренировочного дня (Д1–Д4).
@@ -2607,6 +2751,28 @@ const dayDescriptions = {
 /* ===[SECTION:CONFIG]=== Константы, конфигурация, DAYS_ORDER ═════════════ */
 
 const DAYS_ORDER = ["Д1","Д2","Д3","Д4"];
+
+/* Экстра-тренировки (пресс + изоляция, по heat-score из EXTRA_POOL) */
+const EXTRA_DAYS = ["Э1","Э2","Э3"];
+
+/* Пул упражнений для экстра-дней: пресс + изоляция. Не входят в основную программу.
+   key → ключ в exerciseVariations; type/muscle/movement — метаданные слота */
+const EXTRA_POOL = [
+  /* ── Пресс (3 типа) ─────────────────────────────────────────── */
+  { key:'Э-abs-front', type:'ПРЕСС',     muscle:'Пресс (передние)',  movement:'скручивание'     },
+  { key:'Э-abs-legs',  type:'ПРЕСС',     muscle:'Пресс (нижний)',    movement:'подъём ног'      },
+  { key:'Э-abs-plank', type:'ПРЕСС',     muscle:'Пресс (кор)',       movement:'планка'          },
+  /* ── Изоляция (9 типов) ─────────────────────────────────────── */
+  { key:'Э-lateral',   type:'ИЗОЛЯЦИЯ',  muscle:'Боковые дельты',   movement:'разведение'      },
+  { key:'Э-rear-delt', type:'ИЗОЛЯЦИЯ',  muscle:'Задняя дельта',    movement:'разведение'      },
+  { key:'Э-calves',    type:'ИЗОЛЯЦИЯ',  muscle:'Икры',             movement:'подъём на носки' },
+  { key:'Э-bicep',     type:'ИЗОЛЯЦИЯ',  muscle:'Бицепс (изол.)',   movement:'сгибание'        },
+  { key:'Э-tricep',    type:'ИЗОЛЯЦИЯ',  muscle:'Трицепс (изол.)',  movement:'разгибание'      },
+  { key:'Э-chest-fly', type:'ИЗОЛЯЦИЯ',  muscle:'Грудь (изол.)',    movement:'сведение'        },
+  { key:'Э-back-iso',  type:'ИЗОЛЯЦИЯ',  muscle:'Спина (изол.)',    movement:'разгибание'      },
+  { key:'Э-glute',     type:'ИЗОЛЯЦИЯ',  muscle:'Ягодицы (изол.)', movement:'отведение'       },
+  { key:'Э-forearm',   type:'ИЗОЛЯЦИЯ',  muscle:'Предплечья',      movement:'сгибание'        },
+];
 const CONFIG = {
   /* ── Данные ── */
   MAX_HEAT: 10,           // Максимальное значение горячести упражнения
@@ -2954,7 +3120,11 @@ const App = {
    * @returns {number} — кол-во дней с doneDays[day] === true
    */
   getCompletedDays() {
-    return Object.keys(this.persist.doneDays).filter(d => this.persist.doneDays[d]).length;
+    return DAYS_ORDER.filter(d => this.persist.doneDays[d]).length;
+  },
+
+  getCompletedExtraDays() {
+    return EXTRA_DAYS.filter(d => this.persist.doneDays[d]).length;
   },
 
   /* ── Расчёт прогресса батареи ── */
@@ -3296,8 +3466,9 @@ const UI = {
     /* ── Информация о неделе ── */
     const completed = App.getCompletedDays();
     const total = DAYS_ORDER.length;
+    const completedExtra = App.getCompletedExtraDays();
     document.getElementById('cal-week-info').innerHTML = `
-      <span class="cal-week-text">Неделя: <strong>${completed} / ${total}</strong> тренировок</span>
+      <span class="cal-week-text">Неделя: <strong>${completed} / ${total}</strong> · Экстра: <strong>${completedExtra} / ${EXTRA_DAYS.length}</strong></span>
       <button class="btn-reset-day" id="btn-reset-day">↻ день</button>`;
 
     /* ── CTA: автовыбор следующей тренировки ── */
@@ -3328,6 +3499,23 @@ const UI = {
       btn.textContent = 'ВСЕ ТРЕНИРОВКИ ВЫПОЛНЕНЫ ⚡';
       btn.disabled = true;
       btn.onclick = null;
+    }
+
+    /* ── CTA: экстра-тренировка ── */
+    const nextExtra = EXTRA_DAYS.find(d =>
+      App.persist.progress[d] && App.persist.progress[d].slots && !App.persist.doneDays[d]
+    ) || EXTRA_DAYS.find(d => !App.persist.doneDays[d]);
+    const extraBtn = document.getElementById('cal-extra-btn');
+    if (nextExtra) {
+      const extraNum = EXTRA_DAYS.indexOf(nextExtra) + 1;
+      const extraResume = App.persist.progress[nextExtra] && App.persist.progress[nextExtra].slots;
+      extraBtn.textContent = extraResume ? `ПРОДОЛЖИТЬ ЭКСТРА-${extraNum}` : `ЭКСТРА-ТРЕНИРОВКА ${extraNum}`;
+      extraBtn.disabled = false;
+      extraBtn.onclick = () => Workout.startExtra(nextExtra);
+    } else {
+      extraBtn.textContent = 'ВСЕ ЭКСТРА ВЫПОЛНЕНЫ ⚡';
+      extraBtn.disabled = true;
+      extraBtn.onclick = null;
     }
 
     /* ── Превью тренировки на сегодня ── */
@@ -3799,6 +3987,7 @@ const Workout = {
       const vars = exerciseVariations[varKey] || [];
       return {
         id: ex.id, type: ex.type, muscle: ex.muscle, movement: ex.movement,
+        varKey,             // ключ в exerciseVariations — используется вместо currentDay+id
         varQueue: vars
           .map((_, i) => i)
           .filter(i => !App.isBanned(varKey, i))
@@ -3810,6 +3999,46 @@ const Workout = {
         busy: [],           // [{idx}] — варианты, отмеченные "занято" → зона ПРОВЕРЬ
         done: false,        // слот выполнен
         doneVarIdx: null,   // какой вариант был выбран
+      };
+    });
+  },
+
+  /**
+   * Строит 6 слотов для экстра-тренировки.
+   * Выбирает из EXTRA_POOL упражнения с наименьшим heat (+ jitter для ротации).
+   * Пресс всегда "холодный", поэтому попадает регулярно.
+   */
+  buildExtraSlots() {
+    /* Пресс всегда включается (3 слота), остальные 3 — лучшая изоляция по score */
+    const absPool = EXTRA_POOL.filter(ex => ex.type === 'ПРЕСС');
+    const isoPool = EXTRA_POOL.filter(ex => ex.type !== 'ПРЕСС');
+
+    const isoScored = isoPool.map(ex => {
+      const vars = exerciseVariations[ex.key] || [];
+      const available = vars.map((_, i) => i).filter(i => !App.isBanned(ex.key, i));
+      if (!available.length) return { ex, bestScore: -999 };
+      const bestScore = Math.max(...available.map(i => varScore(i, ex.key, vars[i].img)));
+      return { ex, bestScore };
+    }).sort((a, b) => b.bestScore - a.bestScore);
+
+    const isoCount = CONFIG.SLOTS_PER_DAY - absPool.length;  // 3
+    const selected = [...absPool, ...isoScored.slice(0, isoCount).map(s => s.ex)];
+
+    return selected.map((ex, idx) => {
+      const vars = exerciseVariations[ex.key] || [];
+      const available = vars.map((_, i) => i).filter(i => !App.isBanned(ex.key, i));
+      return {
+        id: idx + 1,
+        type: ex.type,
+        muscle: ex.muscle,
+        movement: ex.movement,
+        varKey: ex.key,
+        varQueue: available.sort((a, b) =>
+          varScore(b, ex.key, vars[b].img) - varScore(a, ex.key, vars[a].img)
+        ),
+        busy: [],
+        done: false,
+        doneVarIdx: null,
       };
     });
   },
@@ -3827,8 +4056,27 @@ const Workout = {
     s.currentSlotIdx = null;
     const saved = App.persist.progress[day];
     s.slots = (saved && saved.slots) ? saved.slots : this.buildSlots(day);
-    document.getElementById('m-day-label').textContent = day + ' · ' + workoutSchedule[day].name;
+    document.getElementById('m-day-label').textContent = day + ' · ' + (workoutSchedule[day] ? workoutSchedule[day].name : '');
     document.getElementById('muscles-hint').textContent = dayDescriptions[day] || '';
+    App.updateBattery();
+    this.renderMuscles();
+    UI.showScreen('screen-muscles');
+  },
+
+  /**
+   * Запускает экстра-тренировку (Э1, Э2, Э3).
+   * Пропускает screen-muscles, идёт сразу в screen-workout.
+   * @param {string} extraDay — "Э1" | "Э2" | "Э3"
+   */
+  startExtra(extraDay) {
+    const s = App.state;
+    s.currentDay = extraDay;
+    s.currentSlotIdx = null;
+    const saved = App.persist.progress[extraDay];
+    s.slots = (saved && saved.slots) ? saved.slots : this.buildExtraSlots();
+    const num = EXTRA_DAYS.indexOf(extraDay) + 1;
+    document.getElementById('m-day-label').textContent = `${extraDay} · ЭКСТРА-${num}`;
+    document.getElementById('muscles-hint').textContent = 'изоляция + пресс';
     App.updateBattery();
     this.renderMuscles();
     UI.showScreen('screen-muscles');
@@ -3926,7 +4174,7 @@ const Workout = {
 
     /* ── Если слот выполнен — показываем done-row ── */
     if (sl.done) {
-      const varKey = s.currentDay + '-' + sl.id;
+      const varKey = sl.varKey;
       const variant = sl.doneVarIdx !== null
         ? (exerciseVariations[varKey] || [])[sl.doneVarIdx] : null;
       const z3 = document.createElement('div');
@@ -3944,7 +4192,7 @@ const Workout = {
 
     /* ── Зона 1: ДЕЛАЙ СЕЙЧАС (если есть varQueue) ── */
     if (sl.varQueue.length > 0) {
-      const varKey = s.currentDay + '-' + sl.id;
+      const varKey = sl.varKey;
       const totalVars = (exerciseVariations[varKey] || []).length;
       const topVarIdx = sl.varQueue[0];
       const variant = (exerciseVariations[varKey] || [])[topVarIdx];
@@ -3996,7 +4244,7 @@ const Workout = {
       z2.className = 'workout-zone workout-zone-check';
       z2.innerHTML = '<div class="zone-label zone-label-dim">// Проверь — может освободилось</div>';
       sl.busy.forEach(b => {
-        const varKey = s.currentDay + '-' + sl.id;
+        const varKey = sl.varKey;
         const variant = (exerciseVariations[varKey] || [])[b.idx];
         if (!variant) return;
         z2.appendChild(this._renderZoneCard({
@@ -4020,8 +4268,7 @@ const Workout = {
     if (!slot) return;
     s.currentSlotIdx = slotIdx;
 
-    /* Формируем ключ для exerciseVariations: "Д1-1", "Д2-3", ... */
-    const varKey = s.currentDay + '-' + slot.id;
+    const varKey = slot.varKey;
     const vars = exerciseVariations[varKey] || [];
 
     /* Заполняем UI-элементы */
@@ -4401,7 +4648,7 @@ const Workout = {
     slot.varQueue.unshift(varIdx); // возвращаем вперёд очереди
     s.currentSlotIdx = slotIdx;
     App.saveProgress();
-    this.openVariation(s.currentDay + '-' + slot.id, varIdx);
+    this.openVariation(slot.varKey, varIdx);
   },
 
   /**
@@ -4439,8 +4686,7 @@ const Workout = {
     slot.busy = []; // снимаем все "занято" для этого слота
 
     /* Увеличиваем горячесть выбранного варианта */
-    const _varKey = s.currentDay + '-' + slot.id;
-    const _doneVar = (exerciseVariations[_varKey] || [])[s.currentVarIdx];
+    const _doneVar = (exerciseVariations[slot.varKey] || [])[s.currentVarIdx];
     if (_doneVar) App.addHeat(_doneVar.img);
 
     if (!App.persist.progress[s.currentDay]) {
@@ -4484,6 +4730,7 @@ const Workout = {
    */
   finish() {
     const s = App.state;
+    const isExtra = EXTRA_DAYS.includes(s.currentDay);
     App.persist.doneDays[s.currentDay] = true;
 
     /* Формируем запись истории */
@@ -4491,11 +4738,14 @@ const Workout = {
     const completedExercises = (prog && prog.completedExercises) || [];
     const totalVolume = completedExercises.reduce((sum, ex) =>
       sum + ex.sets.reduce((s2, set) => s2 + (set.weight || 0) * (set.reps || 0), 0), 0);
+    const workoutName = isExtra
+      ? ('ЭКСТРА-' + (EXTRA_DAYS.indexOf(s.currentDay) + 1))
+      : (workoutSchedule[s.currentDay] ? workoutSchedule[s.currentDay].name : s.currentDay);
 
     App.persist.history.push({
       date: new Date().toISOString(),
       day: s.currentDay,
-      name: workoutSchedule[s.currentDay].name,
+      name: workoutName,
       exercises: completedExercises,
       totalVolume
     });
@@ -4735,7 +4985,7 @@ document.getElementById('app').addEventListener('click', (e) => {
       const varIdx = parseInt(target.dataset.varidx);
       App.state.currentSlotIdx = slotIdx;
       const slot = App.state.slots[slotIdx];
-      Workout.openVariation(App.state.currentDay + '-' + slot.id, varIdx);
+      Workout.openVariation(slot.varKey, varIdx);
       break;
     }
     case 'slot-busy':
