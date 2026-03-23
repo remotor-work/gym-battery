@@ -417,231 +417,116 @@ html, body {
 /* ══════════════════════════════════════════════════════════════════
    HOME SCREEN — Главный экран
    ────────────────────────────
-   4 дня, каждый — отдельная строка на всю ширину.
-   Форма: лежачая батарейка (АА-аккумулятор).
-   Заливка прогресса идёт слева направо.
+   Месячный календарь + кнопка «Начать тренировку N».
+   Ячейки дней показывают мини-батарейку заполнения.
    ══════════════════════════════════════════════════════════════════ */
-#screen-home .scroll-body { padding: 16px; }
+#screen-home .scroll-body { padding: 12px 12px 20px; }
 
-/* Лейбл раздела (мелкий серый текст) */
-.section-label {
-  font-family: var(--orb);
-  font-size: 8px;
-  font-weight: 500;
-  letter-spacing: 0.25em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  margin-bottom: 13px;
+/* ── Заголовок месяца ── */
+.cal-header {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 0 12px;
+}
+.cal-month-name {
+  font-family: var(--orb); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.15em; color: var(--white); text-transform: uppercase;
 }
 
-/* Колонка: каждый день — отдельная строка */
-.day-grid { display: flex; flex-direction: column; gap: 10px; }
+/* ── Дни недели ── */
+.cal-weekdays {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+  margin-bottom: 3px;
+}
+.cal-weekday {
+  font-family: var(--orb); font-size: 8px; font-weight: 500;
+  letter-spacing: 0.12em; color: var(--text-dim);
+  text-align: center; text-transform: uppercase; padding: 4px 0;
+}
 
-/* ── WEEK BAR — Строка прогресса недели ──
-   Показывает "X / Y тренировок" + кнопку сброса.
-   ───────────────────────────────────────── */
-.week-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 10px 13px;
+/* ── Сетка дней ── */
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+}
+
+/* ── Ячейка дня ── */
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: 8px;
   background: var(--bg2);
-  border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px; padding: 3px 2px;
+  position: relative;
+  transition: all 0.15s;
+}
+.cal-day.today {
+  border: 2px solid var(--led);
+  box-shadow: 0 0 10px var(--led-glow);
+}
+.cal-day.other-month { opacity: 0.15; }
+.cal-day.future { opacity: 0.4; }
+.cal-day.rest-day { opacity: 0.6; }
+
+/* Число дня */
+.cal-day-num {
+  font-family: var(--orb); font-size: 14px; font-weight: 700;
+  color: var(--white); line-height: 1;
+}
+.cal-day.other-month .cal-day-num { color: var(--text-dim); }
+.cal-day.has-workout .cal-day-num { color: var(--led); }
+.cal-day.has-full .cal-day-num { color: var(--led); text-shadow: 0 0 8px rgba(217,115,32,0.5); }
+
+/* Мини-батарейка внутри ячейки */
+.cal-day-battery {
+  width: 80%; height: 3px;
+  border-radius: 2px; background: var(--border);
+  overflow: hidden;
+}
+.cal-day-fill {
+  height: 100%; border-radius: 2px;
+  background: var(--led);
+  transition: width 0.3s;
+}
+.cal-day.has-full .cal-day-fill {
+  box-shadow: 0 0 4px rgba(217,115,32,0.5);
+}
+
+/* Лейбл дня тренировки (Д1, Д2...) */
+.cal-day-label {
+  font-family: var(--orb); font-size: 6px; font-weight: 500;
+  color: var(--led-dim); letter-spacing: 0.05em;
+}
+
+/* ── Информация о неделе ── */
+.cal-week-info {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; padding: 10px 13px;
+  background: var(--bg2); border: 1px solid var(--border);
   border-radius: var(--r2);
 }
-.week-info {
-  font-family: var(--orb);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  color: var(--text);
-  text-transform: uppercase;
+.cal-week-text {
+  font-family: var(--orb); font-size: 9px; font-weight: 500;
+  letter-spacing: 0.12em; color: var(--text); text-transform: uppercase;
 }
-.week-info strong { color: var(--led); font-weight: 600; }
-.week-actions { display: flex; gap: 6px; }
-.week-btn {
-  font-family: var(--exo);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
-  background: none;
-  border: 1px solid var(--border2);
-  border-radius: var(--r3);
-  padding: 5px 10px;
+.cal-week-text strong { color: var(--led); font-weight: 600; }
+
+/* ── CTA кнопка «Начать тренировку» ── */
+.cal-start-btn {
+  width: 100%; margin-top: 14px; padding: 18px;
+  border-radius: var(--r);
+  background: var(--led); color: var(--bg); border: none;
+  font-family: var(--orb); font-size: 14px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
   cursor: pointer;
+  box-shadow: 0 0 20px rgba(217,115,32,0.3);
   transition: all 0.15s;
-  text-transform: uppercase;
 }
-.week-btn:active { background: var(--bg3); color: var(--text2); }
-.week-btn.danger { border-color: var(--red-dim); color: var(--red-dim); }
-.week-btn.danger:active { background: rgba(231,76,60,0.1); color: var(--red); }
-
-/* ══════════════════════════════════════════════════════════════════
-   DAY CARD — Карточка-батарейка (горизонтальная, АА-стиль)
-   ──────────────────────────────────────────────────────────
-   Форма: лежачий аккумулятор. Тело + терминал (плюс) справа.
-   Заливка прогресса: слева направо.
-
-   ┌────────────────────────────────────────────┐ ┤
-   │ Д1  ВЕРХ · День 1          □□□□□□□□   67% │ │ ← терминал
-   │     Жимы, плечи, трицепс                  │ │
-   │     [████████████████░░░░░░░░░░░]          │ ┤
-   └────────────────────────────────────────────┘
-   ══════════════════════════════════════════════════════════════════ */
-
-/* Обёртка нужна чтобы терминал (::after) не обрезался overflow:hidden */
-.day-card-wrap {
-  position: relative;
-  /* правый отступ под терминал */
-  padding-right: 11px;
+.cal-start-btn:active { transform: scale(0.97); box-shadow: 0 0 30px rgba(217,115,32,0.5); }
+.cal-start-btn:disabled {
+  background: var(--bg3); color: var(--text-dim);
+  box-shadow: none; cursor: default;
 }
-
-.day-card {
-  border: 2px solid var(--border2);
-  border-radius: 12px 5px 5px 12px;
-  padding: 14px 16px 12px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.18s, background 0.18s, transform 0.12s;
-  min-height: 80px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 14px;
-  background: var(--bg2);
-}
-.day-card:active { transform: scale(0.98); }
-
-/* Терминал (плюсовой контакт батарейки) — справа в обёртке */
-.day-card-wrap::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 10px;
-  height: 28px;
-  background: var(--border2);
-  border-radius: 0 5px 5px 0;
-  transition: background 0.2s;
-}
-
-/* ── Состояния ── */
-.day-card.available { border-color: var(--border2); }
-.day-card.available:active { border-color: var(--led-dim); background: var(--bg3); }
-.day-card.partial { border-color: var(--led-dim); }
-.day-card.partial:active { background: var(--bg3); }
-.day-card.done { border-color: var(--led); }
-.day-card-wrap.state-done::after { background: var(--led); }
-.day-card-wrap.state-partial::after { background: var(--led-dim); }
-.day-card.inactive { border-color: var(--border); opacity: 0.3; cursor: default; background: transparent; }
-.day-card-wrap.state-inactive::after { background: var(--border); opacity: 0.3; }
-
-/* Заливка прогресса — слева направо (как заряд батарейки) */
-.day-fill {
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 0%;
-  background: transparent;
-  transition: width 0.7s cubic-bezier(0.4,0,0.2,1), background 0.3s;
-  pointer-events: none;
-  z-index: 0;
-  border-radius: 10px 0 0 10px;
-}
-.day-card.done .day-fill {
-  width: 100%;
-  border-radius: 10px 3px 3px 10px;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(217,115,32,0.16) 0px, rgba(217,115,32,0.16) 3px,
-    rgba(217,115,32,0.06) 3px, rgba(217,115,32,0.06) 8px
-  );
-}
-.day-card.partial .day-fill {
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(217,115,32,0.12) 0px, rgba(217,115,32,0.12) 3px,
-    rgba(217,115,32,0.04) 3px, rgba(217,115,32,0.04) 8px
-  );
-}
-
-/* Контент поверх заливки */
-.day-card > *:not(.day-fill) { position: relative; z-index: 1; }
-
-/* ── Левый блок: номер дня ── */
-.day-card-left {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-}
-.day-label {
-  font-family: var(--orb); font-size: 26px; font-weight: 800;
-  color: var(--white); line-height: 1; letter-spacing: -0.01em;
-}
-.day-card.done .day-label { color: var(--led); text-shadow: 0 0 16px rgba(217,115,32,0.5); }
-.day-card.inactive .day-label { color: var(--text-dim); }
-
-/* ── Центральный блок: инфо ── */
-.day-card-center {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 4px;
-}
-.day-card-title {
-  font-family: var(--orb); font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; color: var(--text); text-transform: uppercase;
-}
-.day-card.done .day-card-title { color: var(--led); }
-.day-card.inactive .day-card-title { color: var(--text-dim); }
-.day-card-muscles {
-  font-family: var(--exo); font-size: 10px; font-weight: 400;
-  color: var(--text-dim); line-height: 1.4;
-}
-/* Полоска заряда — горизонтальная внутри центрального блока */
-.day-charge-bar {
-  margin-top: 6px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  overflow: hidden;
-  position: relative;
-}
-.day-charge-fill {
-  height: 100%;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--led) 0px, var(--led) 3px,
-    rgba(217,115,32,0.4) 3px, rgba(217,115,32,0.4) 6px
-  );
-  border-radius: 2px;
-  transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
-  box-shadow: 0 0 6px rgba(217,115,32,0.35);
-  width: 0%;
-}
-.day-card.inactive .day-charge-bar { display: none; }
-
-/* ── Правый блок: статус/процент ── */
-.day-card-right {
-  flex-shrink: 0;
-  text-align: right;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
-}
-.day-status-pct {
-  font-family: var(--orb); font-size: 16px; font-weight: 700;
-  color: var(--text-dim); letter-spacing: 0.02em;
-}
-.day-card.done .day-status-pct { color: var(--led); text-shadow: 0 0 10px rgba(217,115,32,0.4); }
-.day-card.partial .day-status-pct { color: var(--led); opacity: 0.8; }
-.day-status-label {
-  font-family: var(--exo); font-size: 9px; font-weight: 600;
-  color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
-}
+.cal-start-btn:disabled:active { transform: none; }
 
 /* Анимация появления элемента */
 @keyframes slideIn {
@@ -1689,11 +1574,12 @@ html, body {
       </div>
     </div>
     <div class="scroll-body">
-      <!-- Week bar: рендерится из JS (UI.renderHome) -->
-      <div id="week-bar" class="week-bar"></div>
-      <div class="section-label">// Выбери день тренировки</div>
-      <!-- Day grid: рендерится из JS (UI.renderHome) -->
-      <div class="day-grid" id="day-grid"></div>
+      <!-- Calendar: рендерится из JS (UI.renderHome) -->
+      <div id="cal-header" class="cal-header"></div>
+      <div id="cal-weekdays" class="cal-weekdays"></div>
+      <div id="cal-grid" class="cal-grid"></div>
+      <div id="cal-week-info" class="cal-week-info"></div>
+      <button class="cal-start-btn" id="cal-start-btn"></button>
     </div>
   </div>
 
@@ -3214,83 +3100,148 @@ const UI = {
    * • available — доступна для запуска
    */
   renderHome() {
-    /* ── Week bar ── */
-    const completed = App.getCompletedDays();
-    const total = DAYS_ORDER.length;  /* = 4 тренировочных дня */
-    document.getElementById('week-bar').innerHTML = `
-      <div class="week-info">Неделя: <strong>${completed} / ${total}</strong> тренировок</div>
-      <div class="week-actions">
-        <button class="week-btn danger" id="btn-reset-week">↻ Сброс</button>
-      </div>`;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const todayStr = now.toISOString().slice(0, 10);
+    const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-    /* ── Day grid ── */
-    const grid = document.getElementById('day-grid');
-    grid.innerHTML = '';
-    DAYS_ORDER.forEach(day => {
-      const data = workoutSchedule[day];
-      const isDone = !!App.persist.doneDays[day];
-      const isActive = !!data;
-      const partial = App.persist.progress[day];
+    /* ── Заголовок месяца ── */
+    document.getElementById('cal-header').innerHTML =
+      `<span class="cal-month-name">${MONTH_NAMES[month]} ${year}</span>`;
 
-      /* Прогресс */
-      let fillPct = 0, statusPct = '', statusLabel = '';
-      if (isDone) {
-        fillPct = 100; statusPct = '100%'; statusLabel = 'ЗАРЯЖЕНА';
-      } else if (partial) {
-        const doneCount = partial.slots
-          ? partial.slots.filter(sl => sl.done).length
-          : (partial.completedCount || 0);
-        const totalCount = partial.slots
-          ? partial.slots.length
-          : (partial.totalExercises || data.exercises.length);
-        fillPct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
-        statusPct = fillPct + '%'; statusLabel = 'продолжить';
-      } else if (isActive) {
-        statusPct = data.exercises.length + ' упр'; statusLabel = 'начать';
-      } else {
-        statusPct = '—'; statusLabel = 'отдых';
-      }
+    /* ── Дни недели ── */
+    document.getElementById('cal-weekdays').innerHTML =
+      ['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС']
+        .map(d => `<div class="cal-weekday">${d}</div>`).join('');
 
-      /* Мышцы из описания */
-      const musclesText = dayDescriptions[day] || data.full || '';
-
-      /* Состояние карточки */
-      let cardState = isActive ? (isDone ? 'done' : partial ? 'partial' : 'available') : 'inactive';
-      const wrapStateClass = `state-${cardState}`;
-
-      /* Обёртка с терминалом */
-      const wrap = document.createElement('div');
-      wrap.className = `day-card-wrap ${wrapStateClass}`;
-
-      const card = document.createElement('div');
-      card.className = `day-card ${cardState}`;
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', isActive && !isDone ? '0' : '-1');
-      card.setAttribute('aria-label', `${dayFullNames[day]} — ${statusLabel}`);
-
-      card.innerHTML = `
-        <div class="day-fill" style="width:${fillPct}%"></div>
-        <div class="day-card-left">
-          <div class="day-label">${day}</div>
-        </div>
-        <div class="day-card-center">
-          <div class="day-card-title">${dayFullNames[day].toUpperCase()}</div>
-          <div class="day-card-muscles">${musclesText}</div>
-          <div class="day-charge-bar">
-            <div class="day-charge-fill" style="width:${fillPct}%"></div>
-          </div>
-        </div>
-        <div class="day-card-right">
-          <div class="day-status-pct">${statusPct}</div>
-          <div class="day-status-label">${statusLabel}</div>
-        </div>`;
-
-      if (isActive && !isDone) {
-        card.addEventListener('click', () => Workout.start(day));
-      }
-      wrap.appendChild(card);
-      grid.appendChild(wrap);
+    /* ── Построение lookup: дата → {pct, dayLabel} из workoutLog ── */
+    const log = App.persist.workoutLog || [];
+    const logMap = {};
+    log.forEach(entry => {
+      if (!logMap[entry.date]) logMap[entry.date] = [];
+      logMap[entry.date].push(entry);
     });
+
+    /* Также учитываем текущий progress (незавершённые тренировки) */
+    const progressMap = {};
+    DAYS_ORDER.forEach(day => {
+      const p = App.persist.progress[day];
+      if (p && p.slots) {
+        const done = p.slots.filter(sl => sl.done).length;
+        const total = p.slots.length;
+        if (done > 0) progressMap[todayStr] = {
+          pct: Math.round(done / total * 100), dayLabel: day
+        };
+      }
+    });
+
+    function getDateInfo(dateStr) {
+      /* Из workoutLog */
+      const entries = logMap[dateStr];
+      if (entries && entries.length > 0) {
+        let totalDone = 0, totalExpected = 0;
+        entries.forEach(e => {
+          const sched = workoutSchedule[e.day];
+          if (sched) {
+            totalExpected += sched.exercises.length;
+            totalDone += (e.exercises || []).length;
+          }
+        });
+        if (totalExpected > 0) {
+          return {
+            pct: Math.min(100, Math.round(totalDone / totalExpected * 100)),
+            dayLabel: entries[0].day
+          };
+        }
+      }
+      /* Из текущего progress */
+      if (progressMap[dateStr]) return progressMap[dateStr];
+      return null;
+    }
+
+    /* ── Генерация сетки дней ── */
+    const firstDay = new Date(year, month, 1);
+    const startDow = (firstDay.getDay() + 6) % 7; // Пн=0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = '';
+
+    /* Пустые ячейки предыдущего месяца */
+    const prevMonthDays = new Date(year, month, 0).getDate();
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = prevMonthDays - i;
+      grid.innerHTML += `<div class="cal-day other-month"><span class="cal-day-num">${d}</span></div>`;
+    }
+
+    /* Дни текущего месяца */
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isToday = dateStr === todayStr;
+      const isFuture = dateStr > todayStr;
+      const info = getDateInfo(dateStr);
+
+      let cls = 'cal-day';
+      if (isToday) cls += ' today';
+      if (isFuture) cls += ' future';
+      if (info) {
+        cls += ' has-workout';
+        if (info.pct >= 100) cls += ' has-full';
+      }
+
+      let inner = `<span class="cal-day-num">${d}</span>`;
+      if (info) {
+        inner += `<div class="cal-day-battery"><div class="cal-day-fill" style="width:${info.pct}%"></div></div>`;
+        inner += `<span class="cal-day-label">${info.dayLabel}</span>`;
+      }
+
+      grid.innerHTML += `<div class="${cls}">${inner}</div>`;
+    }
+
+    /* Пустые ячейки следующего месяца */
+    const totalCells = startDow + daysInMonth;
+    const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let i = 1; i <= remaining; i++) {
+      grid.innerHTML += `<div class="cal-day other-month"><span class="cal-day-num">${i}</span></div>`;
+    }
+
+    /* ── Информация о неделе ── */
+    const completed = App.getCompletedDays();
+    const total = DAYS_ORDER.length;
+    document.getElementById('cal-week-info').innerHTML = `
+      <span class="cal-week-text">Неделя: <strong>${completed} / ${total}</strong> тренировок</span>
+      <button class="week-btn danger" id="btn-reset-week">↻ Сброс</button>`;
+
+    /* ── CTA: автовыбор следующей тренировки ── */
+    /* Если есть незавершённая тренировка (progress с слотами), предлагаем продолжить */
+    let nextDay = null;
+    let isResume = false;
+    for (const day of DAYS_ORDER) {
+      if (App.persist.progress[day] && App.persist.progress[day].slots && !App.persist.doneDays[day]) {
+        nextDay = day;
+        isResume = true;
+        break;
+      }
+    }
+    if (!nextDay) {
+      for (const day of DAYS_ORDER) {
+        if (!App.persist.doneDays[day]) { nextDay = day; break; }
+      }
+    }
+
+    const btn = document.getElementById('cal-start-btn');
+    if (nextDay) {
+      const idx = DAYS_ORDER.indexOf(nextDay) + 1;
+      const label = isResume ? `ПРОДОЛЖИТЬ ТРЕНИРОВКУ ${idx}` : `НАЧАТЬ ТРЕНИРОВКУ ${idx}`;
+      btn.textContent = label;
+      btn.disabled = false;
+      btn.onclick = () => Workout.start(nextDay);
+    } else {
+      btn.textContent = 'ВСЕ ТРЕНИРОВКИ ВЫПОЛНЕНЫ ⚡';
+      btn.disabled = true;
+      btn.onclick = null;
+    }
   },
 
   /* ══════════════════════════════════════
