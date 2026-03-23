@@ -4705,8 +4705,14 @@ document.getElementById('app').addEventListener('click', (e) => {
       if (!tapDate) break;
       const todayDate = new Date().toISOString().slice(0, 10);
       if (tapDate === todayDate) {
-        /* Сегодня — запускаем тренировку (через CTA) */
-        document.getElementById('cal-start-btn').click();
+        /* Сегодня: если есть лог (тренировка уже выполнена) — показываем историю,
+           иначе — запускаем тренировку через CTA */
+        const hasTodayLog = (App.persist.workoutLog || []).some(e => e.date === todayDate);
+        if (hasTodayLog) {
+          UI.showDayLog(todayDate);
+        } else {
+          document.getElementById('cal-start-btn').click();
+        }
       } else {
         UI.showDayLog(tapDate);
       }
