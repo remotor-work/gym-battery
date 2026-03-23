@@ -510,6 +510,81 @@ html, body {
 }
 .cal-week-text strong { color: var(--led); font-weight: 600; }
 
+/* ── Превью тренировки ── */
+.cal-preview {
+  margin-top: 14px; padding: 12px 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.cal-preview-date {
+  font-family: var(--orb); font-size: 8px; font-weight: 500;
+  letter-spacing: 0.14em; color: var(--text-dim); text-transform: uppercase;
+}
+.cal-preview-label {
+  font-family: var(--exo); font-size: 11px; font-weight: 500;
+  color: var(--text); line-height: 1.4;
+}
+
+/* ── Кнопка сброса дня (маленькая) ── */
+.btn-reset-day {
+  padding: 5px 10px; border-radius: var(--r2);
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); font-family: var(--orb); font-size: 8px;
+  font-weight: 500; letter-spacing: 0.1em; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-reset-day:active { background: var(--bg3); color: var(--text); }
+
+/* ── Попап лога дня ── */
+.day-log-popup {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(14,14,16,0.85);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.day-log-popup.visible { display: flex; }
+.day-log-popup-inner {
+  width: 100%; max-width: 440px; max-height: 70vh;
+  background: var(--bg1); border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.day-log-popup-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.day-log-popup-date {
+  font-family: var(--orb); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.12em; color: var(--led); text-transform: uppercase;
+}
+.day-log-popup-body {
+  overflow-y: auto; padding: 12px 16px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.day-log-empty {
+  font-family: var(--exo); font-size: 13px; color: var(--text-dim);
+  text-align: center; padding: 20px 0;
+}
+.day-log-entry {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.day-log-day {
+  font-family: var(--orb); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.15em; color: var(--led);
+}
+.day-log-ex {
+  font-family: var(--exo); font-size: 12px; color: var(--text2);
+  padding: 3px 0; border-bottom: 1px solid var(--bg3);
+}
+.day-log-ex:last-child { border-bottom: none; }
+.day-log-sets {
+  font-family: var(--orb); font-size: 9px; color: var(--text-dim);
+  letter-spacing: 0.05em; margin-top: 2px;
+}
+
 /* ── CTA кнопка «Начать тренировку» ── */
 .cal-start-btn {
   width: 100%; margin-top: 14px; padding: 18px;
@@ -1579,6 +1654,7 @@ html, body {
       <div id="cal-weekdays" class="cal-weekdays"></div>
       <div id="cal-grid" class="cal-grid"></div>
       <div id="cal-week-info" class="cal-week-info"></div>
+      <div id="cal-preview" class="cal-preview" style="display:none"></div>
       <button class="cal-start-btn" id="cal-start-btn"></button>
     </div>
   </div>
@@ -1904,6 +1980,17 @@ html, body {
       <button class="btn btn-ghost" id="dialog-cancel">Отмена</button>
       <button class="btn btn-primary" id="dialog-confirm">Да</button>
     </div>
+  </div>
+</div>
+
+<!-- DAY LOG POPUP — показывает лог тренировки за выбранный день -->
+<div class="day-log-popup" id="day-log-popup">
+  <div class="day-log-popup-inner">
+    <div class="day-log-popup-header">
+      <span class="day-log-popup-date" id="day-log-popup-date"></span>
+      <button class="icon-btn" id="btn-day-log-close">✕</button>
+    </div>
+    <div class="day-log-popup-body" id="day-log-popup-body"></div>
   </div>
 </div>
 
@@ -3196,7 +3283,7 @@ const UI = {
         inner += `<span class="cal-day-label">${info.dayLabel}</span>`;
       }
 
-      grid.innerHTML += `<div class="${cls}">${inner}</div>`;
+      grid.innerHTML += `<div class="${cls}" data-action="cal-day-tap" data-date="${dateStr}">${inner}</div>`;
     }
 
     /* Пустые ячейки следующего месяца */
@@ -3211,7 +3298,7 @@ const UI = {
     const total = DAYS_ORDER.length;
     document.getElementById('cal-week-info').innerHTML = `
       <span class="cal-week-text">Неделя: <strong>${completed} / ${total}</strong> тренировок</span>
-      <button class="week-btn danger" id="btn-reset-week">↻ Сброс</button>`;
+      <button class="btn-reset-day" id="btn-reset-day">↻ день</button>`;
 
     /* ── CTA: автовыбор следующей тренировки ── */
     /* Если есть незавершённая тренировка (progress с слотами), предлагаем продолжить */
@@ -3242,6 +3329,53 @@ const UI = {
       btn.disabled = true;
       btn.onclick = null;
     }
+
+    /* ── Превью тренировки на сегодня ── */
+    const preview = document.getElementById('cal-preview');
+    if (nextDay) {
+      const idx = DAYS_ORDER.indexOf(nextDay) + 1;
+      const desc = dayDescriptions[nextDay] || '';
+      const todayFmt = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      preview.innerHTML =
+        `<span class="cal-preview-date">${todayFmt}</span>` +
+        `<span class="cal-preview-label">Тренировка ${idx}: ${desc}</span>`;
+      preview.style.display = '';
+    } else {
+      preview.style.display = 'none';
+    }
+  },
+
+  /* ══════════════════════════════════════
+     showDayLog — Попап лога за день
+     ══════════════════════════════════════ */
+  showDayLog(dateStr) {
+    const log = App.persist.workoutLog || [];
+    const entries = log.filter(e => e.date === dateStr);
+
+    /* Форматируем дату */
+    const d = new Date(dateStr + 'T12:00:00');
+    const dateFmt = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+    document.getElementById('day-log-popup-date').textContent = dateFmt.charAt(0).toUpperCase() + dateFmt.slice(1);
+
+    const body = document.getElementById('day-log-popup-body');
+    if (entries.length === 0) {
+      body.innerHTML = '<p class="day-log-empty">Тренировок не записано</p>';
+    } else {
+      body.innerHTML = entries.map(entry => {
+        const exList = (entry.exercises || []).map(ex => {
+          const setsStr = (ex.sets || [])
+            .filter(s => s.reps > 0)
+            .map(s => s.weight ? `${s.weight}кг×${s.reps}` : `×${s.reps}`)
+            .join(', ');
+          return `<div class="day-log-ex">${ex.name || ex.img || '—'}`
+               + (setsStr ? `<span class="day-log-sets"> · ${setsStr}</span>` : '')
+               + `</div>`;
+        }).join('');
+        return `<div class="day-log-entry"><div class="day-log-day">${entry.day}</div>${exList}</div>`;
+      }).join('');
+    }
+
+    document.getElementById('day-log-popup').classList.add('visible');
   },
 
   /* ══════════════════════════════════════
@@ -4527,6 +4661,7 @@ const Workout = {
    │ vd-like                 │ App.toggleLike (in-place toggle)     │ screen-variation │
    │ vd-ban                  │ App.toggleBan (in-place toggle)      │ screen-variation │
    │ unban-variant           │ delete bannedVariants[key]           │ screen-settings  │
+   │ cal-day-tap             │ UI.showDayLog(date) / CTA click      │ screen-home      │
    │ open-catalog-detail     │ UI.openCatalogDetail(img)            │ screen-catalog   │
    │ tap-set                 │ Workout.tapSet(set)                  │ screen-variation │
    │ force-complete          │ Workout.forceComplete()              │ screen-variation │
@@ -4541,7 +4676,7 @@ const Workout = {
    btn-stats, btn-stats-back, btn-log, btn-log-back,
    btn-settings, btn-settings-back, btn-catalog, btn-catalog-back,
    btn-catalog-detail-back, btn-export, btn-import, btn-clear-cache,
-   btn-reset-week, day-card (×4)
+   btn-reset-day, btn-day-log-close, day-log-popup (backdrop)
 
    Вместо inline onclick (onclick="func()") используется
    единый обработчик на #app. Все кликабельные элементы
@@ -4564,6 +4699,20 @@ document.getElementById('app').addEventListener('click', (e) => {
   const action = target.dataset.action;
 
   switch (action) {
+    /* ── Главный экран: тап по дню календаря ── */
+    case 'cal-day-tap': {
+      const tapDate = target.dataset.date;
+      if (!tapDate) break;
+      const todayDate = new Date().toISOString().slice(0, 10);
+      if (tapDate === todayDate) {
+        /* Сегодня — запускаем тренировку (через CTA) */
+        document.getElementById('cal-start-btn').click();
+      } else {
+        UI.showDayLog(tapDate);
+      }
+      break;
+    }
+
     /* ── Экран мышечных групп: открыть слот ── */
     case 'open-muscle':
       Workout.openMuscle(parseInt(target.dataset.slot));
@@ -4692,6 +4841,15 @@ document.getElementById('app').addEventListener('click', (e) => {
    Для них используем прямой addEventListener по id.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Закрыть попап лога дня */
+document.getElementById('btn-day-log-close').addEventListener('click', () => {
+  document.getElementById('day-log-popup').classList.remove('visible');
+});
+document.getElementById('day-log-popup').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('day-log-popup'))
+    document.getElementById('day-log-popup').classList.remove('visible');
+});
+
 /* Кнопка «Назад» из screen-workout → вернуться к группам мышц */
 document.getElementById('btn-go-home').addEventListener('click', () => {
   App.saveProgress();
@@ -4765,10 +4923,30 @@ document.addEventListener('click', (e) => {
     Workout.finish();
     return;
   }
-  /* Сброс недели (кнопка в week-bar) */
-  if (e.target.id === 'btn-reset-week') {
-    UI.confirm('Сброс недели', 'Прогресс текущей недели будет обнулён. Продолжить?').then(ok => {
-      if (ok) App.resetWeek();
+  /* Сброс текущего дня (кнопка в week-info) */
+  if (e.target.id === 'btn-reset-day') {
+    /* Находим активный (in-progress) или последний выполненный день */
+    let currentDay = null;
+    for (const day of DAYS_ORDER) {
+      if (App.persist.progress[day] && App.persist.progress[day].slots && !App.persist.doneDays[day]) {
+        currentDay = day; break;
+      }
+    }
+    if (!currentDay) {
+      for (let i = DAYS_ORDER.length - 1; i >= 0; i--) {
+        if (App.persist.doneDays[DAYS_ORDER[i]]) { currentDay = DAYS_ORDER[i]; break; }
+      }
+    }
+    if (!currentDay) { UI.toast('Нет прогресса для сброса'); return; }
+    const idx = DAYS_ORDER.indexOf(currentDay) + 1;
+    UI.confirm('Сброс дня', `Прогресс тренировки ${idx} будет сброшен. Продолжить?`).then(ok => {
+      if (ok) {
+        delete App.persist.progress[currentDay];
+        delete App.persist.doneDays[currentDay];
+        App.save();
+        UI.renderHome();
+        UI.toast(`Тренировка ${idx} сброшена`);
+      }
     });
     return;
   }
