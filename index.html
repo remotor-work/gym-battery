@@ -588,62 +588,83 @@ html, body {
 /* ── CTA кнопка «Начать тренировку» ── */
 .cal-start-wrap {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
   align-items: stretch;
-  gap: 0;
+  gap: 8px;
   margin-top: 14px;
 }
 .cal-start-btn {
   width: 100%; padding: 18px;
   border-radius: var(--r);
-  background: var(--led); color: var(--bg); border: none;
+  background: linear-gradient(180deg, #e58536 0%, var(--led) 100%);
+  color: var(--bg); border: none;
   font-family: var(--orb); font-size: 14px; font-weight: 800;
   letter-spacing: 0.12em; text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 0 20px rgba(217,115,32,0.3);
-  transition: all 0.15s;
+  box-shadow: 0 12px 28px rgba(217,115,32,0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background 0.15s ease;
 }
-.cal-start-btn:active { transform: scale(0.97); box-shadow: 0 0 30px rgba(217,115,32,0.5); }
-.cal-start-wrap.open .cal-start-btn {
-  border-bottom-left-radius: 0;
+.cal-start-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 8px 20px rgba(217,115,32,0.18);
 }
 .cal-start-main {
-  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding-inline: 20px;
 }
 .cal-start-toggle {
-  width: 56px;
   flex-shrink: 0;
-  border-left: 1px solid rgba(0,0,0,0.12);
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  font-size: 16px;
-  letter-spacing: 0;
+  background: linear-gradient(180deg, #34281f 0%, #271d17 100%);
+  color: var(--white);
+  border: 1px solid var(--border2);
+  box-shadow: none;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 10px 8px 8px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+}
+.cal-start-toggle .toggle-label {
+  font-size: 8px;
+  line-height: 1;
+  opacity: 0.74;
 }
 .cal-start-toggle .chevron {
+  font-size: 18px;
+  line-height: 1;
   transition: transform 0.15s ease;
+}
+.cal-start-toggle:active {
+  background: linear-gradient(180deg, #3f2f24 0%, #2f231c 100%);
 }
 .cal-start-wrap.open .cal-start-toggle .chevron {
   transform: rotate(180deg);
+}
+.cal-start-wrap.open .cal-start-toggle {
+  border-color: var(--led-dim);
 }
 .cal-start-btn:disabled {
   background: var(--bg3); color: var(--text-dim);
   box-shadow: none; cursor: default;
 }
-.cal-start-btn:disabled:active { transform: none; }
+.cal-start-btn:disabled:active { transform: none; box-shadow: none; }
 .cal-start-menu {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(100% + 6px);
+  top: calc(100% + 10px);
   background: var(--bg2);
   border: 1px solid var(--border2);
-  border-radius: var(--r);
-  box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.34);
   overflow: hidden;
   z-index: 15;
+  padding: 6px;
 }
 .cal-start-menu[hidden] { display: none; }
 .cal-start-menu-item {
@@ -651,8 +672,9 @@ html, body {
   background: transparent;
   color: var(--text2);
   border: none;
-  border-bottom: 1px solid var(--border);
-  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 13px 14px;
   text-align: left;
   cursor: pointer;
   display: flex;
@@ -665,7 +687,14 @@ html, body {
   background: var(--bg3);
 }
 .cal-start-menu-item.active {
-  background: var(--led-bg);
+  background: linear-gradient(180deg, rgba(217,115,32,0.14) 0%, rgba(217,115,32,0.07) 100%);
+  box-shadow: inset 0 0 0 1px rgba(217,115,32,0.18);
+}
+.cal-start-menu-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .cal-start-menu-day {
   font-family: var(--orb);
@@ -674,11 +703,27 @@ html, body {
   letter-spacing: 0.14em;
   color: var(--led);
 }
-.cal-start-menu-label {
+.cal-start-menu-desc {
   font-family: var(--exo);
   font-size: 12px;
   color: var(--text);
-  margin-left: auto;
+  line-height: 1.25;
+}
+.cal-start-menu-label {
+  flex-shrink: 0;
+  font-family: var(--orb);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--white);
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+.cal-start-menu-item.active .cal-start-menu-label {
+  background: rgba(217,115,32,0.18);
+  color: var(--led);
 }
 
 /* Кнопка экстра-тренировки — вторичная, под основной */
@@ -1755,6 +1800,7 @@ html, body {
       <div class="cal-start-wrap" id="cal-start-wrap">
         <button class="cal-start-btn cal-start-main" id="cal-start-btn"></button>
         <button class="cal-start-btn cal-start-toggle" id="cal-start-toggle" type="button" aria-label="Выбрать тренировку" aria-expanded="false">
+          <span class="toggle-label">ДЕНЬ</span>
           <span class="chevron">▾</span>
         </button>
         <div class="cal-start-menu" id="cal-start-menu" hidden></div>
@@ -3604,9 +3650,13 @@ const UI = {
       menu.innerHTML = selectableDays.map(day => {
         const dayIdx = DAYS_ORDER.indexOf(day) + 1;
         const resume = !!(App.persist.progress[day] && App.persist.progress[day].slots && !App.persist.doneDays[day]);
+        const dayName = dayFullNames[day] || day;
         return `<button class="cal-start-menu-item${day === selectedDay ? ' active' : ''}" type="button" data-action="select-home-day" data-day="${day}">
-          <span class="cal-start-menu-day">ТРЕНИРОВКА ${dayIdx}</span>
-          <span class="cal-start-menu-label">${resume ? 'Продолжить' : 'Начать'}</span>
+          <span class="cal-start-menu-copy">
+            <span class="cal-start-menu-day">ТРЕНИРОВКА ${dayIdx}</span>
+            <span class="cal-start-menu-desc">${dayName} · ${resume ? 'есть прогресс' : 'новый запуск'}</span>
+          </span>
+          <span class="cal-start-menu-label">${day === selectedDay ? 'Выбрано' : (resume ? 'Продолжить' : 'Начать')}</span>
         </button>`;
       }).join('');
     } else {
