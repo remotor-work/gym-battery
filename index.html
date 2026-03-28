@@ -586,8 +586,15 @@ html, body {
 }
 
 /* ── CTA кнопка «Начать тренировку» ── */
+.cal-start-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 14px;
+}
 .cal-start-btn {
-  width: 100%; margin-top: 14px; padding: 18px;
+  width: 100%; padding: 18px;
   border-radius: var(--r);
   background: var(--led); color: var(--bg); border: none;
   font-family: var(--orb); font-size: 14px; font-weight: 800;
@@ -597,11 +604,82 @@ html, body {
   transition: all 0.15s;
 }
 .cal-start-btn:active { transform: scale(0.97); box-shadow: 0 0 30px rgba(217,115,32,0.5); }
+.cal-start-wrap.open .cal-start-btn {
+  border-bottom-left-radius: 0;
+}
+.cal-start-main {
+  flex: 1;
+}
+.cal-start-toggle {
+  width: 56px;
+  flex-shrink: 0;
+  border-left: 1px solid rgba(0,0,0,0.12);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  font-size: 16px;
+  letter-spacing: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cal-start-toggle .chevron {
+  transition: transform 0.15s ease;
+}
+.cal-start-wrap.open .cal-start-toggle .chevron {
+  transform: rotate(180deg);
+}
 .cal-start-btn:disabled {
   background: var(--bg3); color: var(--text-dim);
   box-shadow: none; cursor: default;
 }
 .cal-start-btn:disabled:active { transform: none; }
+.cal-start-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+  overflow: hidden;
+  z-index: 15;
+}
+.cal-start-menu[hidden] { display: none; }
+.cal-start-menu-item {
+  width: 100%;
+  background: transparent;
+  color: var(--text2);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cal-start-menu-item:last-child { border-bottom: none; }
+.cal-start-menu-item:active {
+  background: var(--bg3);
+}
+.cal-start-menu-item.active {
+  background: var(--led-bg);
+}
+.cal-start-menu-day {
+  font-family: var(--orb);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--led);
+}
+.cal-start-menu-label {
+  font-family: var(--exo);
+  font-size: 12px;
+  color: var(--text);
+  margin-left: auto;
+}
 
 /* Кнопка экстра-тренировки — вторичная, под основной */
 .cal-extra-btn {
@@ -1674,7 +1752,13 @@ html, body {
       <div id="cal-grid" class="cal-grid"></div>
       <div id="cal-week-info" class="cal-week-info"></div>
       <div id="cal-preview" class="cal-preview" style="display:none"></div>
-      <button class="cal-start-btn" id="cal-start-btn"></button>
+      <div class="cal-start-wrap" id="cal-start-wrap">
+        <button class="cal-start-btn cal-start-main" id="cal-start-btn"></button>
+        <button class="cal-start-btn cal-start-toggle" id="cal-start-toggle" type="button" aria-label="Выбрать тренировку" aria-expanded="false">
+          <span class="chevron">▾</span>
+        </button>
+        <div class="cal-start-menu" id="cal-start-menu" hidden></div>
+      </div>
       <button class="cal-extra-btn" id="cal-extra-btn"></button>
     </div>
   </div>
@@ -2860,6 +2944,7 @@ const App = {
     currentSlotIdx: null,   // индекс слота, который сейчас выполняется
     currentVarKey: null,    // "Д1-2" и т.п.
     currentVarIdx: null,    // индекс варианта внутри exerciseVariations[varKey]
+    homeSelectedDay: null,  // выбранный день на главной кнопке запуска
     setsCompleted: 0,
     setData: [],
   },
@@ -3301,6 +3386,16 @@ const UI = {
     setTimeout(() => el.classList.remove('visible'), CONFIG.TOAST_MS);
   },
 
+  setHomeDayMenuOpen(isOpen) {
+    const wrap = document.getElementById('cal-start-wrap');
+    const menu = document.getElementById('cal-start-menu');
+    const toggle = document.getElementById('cal-start-toggle');
+    if (!wrap || !menu || !toggle) return;
+    wrap.classList.toggle('open', !!isOpen);
+    menu.hidden = !isOpen;
+    toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  },
+
   /**
    * Тактильная обратная связь (вибрация).
    * Использует Vibration API (поддерживается на Android).
@@ -3489,17 +3584,39 @@ const UI = {
     }
 
     const btn = document.getElementById('cal-start-btn');
-    if (nextDay) {
-      const idx = DAYS_ORDER.indexOf(nextDay) + 1;
-      const label = isResume ? `ПРОДОЛЖИТЬ ТРЕНИРОВКУ ${idx}` : `НАЧАТЬ ТРЕНИРОВКУ ${idx}`;
+    const toggleBtn = document.getElementById('cal-start-toggle');
+    const menu = document.getElementById('cal-start-menu');
+    const selectableDays = DAYS_ORDER.filter(day => !App.persist.doneDays[day]);
+    const selectedDay = selectableDays.includes(App.state.homeSelectedDay)
+      ? App.state.homeSelectedDay
+      : nextDay;
+
+    App.state.homeSelectedDay = selectedDay || null;
+
+    if (selectedDay) {
+      const idx = DAYS_ORDER.indexOf(selectedDay) + 1;
+      const selectedResume = !!(App.persist.progress[selectedDay] && App.persist.progress[selectedDay].slots && !App.persist.doneDays[selectedDay]);
+      const label = selectedResume ? `ПРОДОЛЖИТЬ ТРЕНИРОВКУ ${idx}` : `НАЧАТЬ ТРЕНИРОВКУ ${idx}`;
       btn.textContent = label;
       btn.disabled = false;
-      btn.onclick = () => Workout.start(nextDay);
+      btn.onclick = () => Workout.start(selectedDay);
+      toggleBtn.disabled = selectableDays.length <= 1;
+      menu.innerHTML = selectableDays.map(day => {
+        const dayIdx = DAYS_ORDER.indexOf(day) + 1;
+        const resume = !!(App.persist.progress[day] && App.persist.progress[day].slots && !App.persist.doneDays[day]);
+        return `<button class="cal-start-menu-item${day === selectedDay ? ' active' : ''}" type="button" data-action="select-home-day" data-day="${day}">
+          <span class="cal-start-menu-day">ТРЕНИРОВКА ${dayIdx}</span>
+          <span class="cal-start-menu-label">${resume ? 'Продолжить' : 'Начать'}</span>
+        </button>`;
+      }).join('');
     } else {
       btn.textContent = 'ВСЕ ТРЕНИРОВКИ ВЫПОЛНЕНЫ ⚡';
       btn.disabled = true;
       btn.onclick = null;
+      toggleBtn.disabled = true;
+      menu.innerHTML = '';
     }
+    this.setHomeDayMenuOpen(false);
 
     /* ── CTA: экстра-тренировка ── */
     const nextExtra = EXTRA_DAYS.find(d =>
@@ -3520,9 +3637,9 @@ const UI = {
 
     /* ── Превью тренировки на сегодня ── */
     const preview = document.getElementById('cal-preview');
-    if (nextDay) {
-      const idx = DAYS_ORDER.indexOf(nextDay) + 1;
-      const desc = dayDescriptions[nextDay] || '';
+    if (selectedDay) {
+      const idx = DAYS_ORDER.indexOf(selectedDay) + 1;
+      const desc = dayDescriptions[selectedDay] || '';
       const todayFmt = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
       preview.innerHTML =
         `<span class="cal-preview-date">${todayFmt}</span>` +
@@ -4943,6 +5060,11 @@ const Workout = {
    → switch(action) → Workout.openExercise(2)
    ═══════════════════════════════════════════════════════════════════════════ */
 document.getElementById('app').addEventListener('click', (e) => {
+  const startWrap = document.getElementById('cal-start-wrap');
+  if (startWrap && startWrap.classList.contains('open') && !e.target.closest('#cal-start-wrap')) {
+    UI.setHomeDayMenuOpen(false);
+  }
+
   /* Ищем ближайший элемент с data-action (всплытие) */
   const target = e.target.closest('[data-action]');
   if (!target) return;
@@ -4972,6 +5094,12 @@ document.getElementById('app').addEventListener('click', (e) => {
     /* ── Экран мышечных групп: открыть слот ── */
     case 'open-muscle':
       Workout.openMuscle(parseInt(target.dataset.slot));
+      break;
+
+    /* ── Главный экран: выбор дня из выпадающего меню ── */
+    case 'select-home-day':
+      App.state.homeSelectedDay = target.dataset.day || null;
+      UI.renderHome();
       break;
 
     /* ── Тренировка: обзор слота (дополнительный экран) ── */
@@ -5151,6 +5279,14 @@ document.getElementById('btn-skip-timer').addEventListener('click', () => Workou
 /* Навигация: Статистика */
 document.getElementById('btn-stats').addEventListener('click', () => { UI.renderStats(); UI.showScreen('screen-stats'); });
 document.getElementById('btn-stats-back').addEventListener('click', () => { UI.renderHome(); UI.showScreen('screen-home'); });
+
+/* Главная CTA: раскрыть/скрыть выбор тренировки */
+document.getElementById('cal-start-toggle').addEventListener('click', () => {
+  const toggle = document.getElementById('cal-start-toggle');
+  if (toggle.disabled) return;
+  const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+  UI.setHomeDayMenuOpen(!isOpen);
+});
 
 /* Навигация: Настройки */
 document.getElementById('btn-settings').addEventListener('click', () => { UI.renderSettings(); UI.showScreen('screen-settings'); });
