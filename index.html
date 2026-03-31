@@ -662,7 +662,10 @@ html, body {
   border: 1px solid var(--border2);
   border-radius: 18px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.34);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: min(320px, calc(100dvh - 260px));
+  -webkit-overflow-scrolling: touch;
   z-index: 15;
   padding: 6px;
 }
@@ -3659,6 +3662,7 @@ const UI = {
     const selectedDay = selectableDays.includes(App.state.homeSelectedDay)
       ? App.state.homeSelectedDay
       : nextDay;
+    const menuDays = selectableDays.filter(day => day !== selectedDay);
 
     App.state.homeSelectedDay = selectedDay || null;
 
@@ -3669,17 +3673,17 @@ const UI = {
       btn.textContent = label;
       btn.disabled = false;
       btn.onclick = () => Workout.start(selectedDay);
-      toggleBtn.disabled = selectableDays.length <= 1;
-      menu.innerHTML = selectableDays.map(day => {
+      toggleBtn.disabled = menuDays.length === 0;
+      menu.innerHTML = menuDays.map(day => {
         const dayIdx = DAYS_ORDER.indexOf(day) + 1;
         const resume = !!(App.persist.progress[day] && App.persist.progress[day].slots);
         const dayName = getWorkoutDisplayName(day);
-        return `<button class="cal-start-menu-item${day === selectedDay ? ' active' : ''}" type="button" data-action="select-home-day" data-day="${day}">
+        return `<button class="cal-start-menu-item" type="button" data-action="select-home-day" data-day="${day}">
           <span class="cal-start-menu-copy">
             <span class="cal-start-menu-day">ТРЕНИРОВКА ${dayIdx}</span>
             <span class="cal-start-menu-desc">${dayName} · ${resume ? 'есть прогресс' : 'новый запуск'}</span>
           </span>
-          <span class="cal-start-menu-label">${day === selectedDay ? 'Выбрано' : (resume ? 'Продолжить' : 'Начать')}</span>
+          <span class="cal-start-menu-label">${resume ? 'Продолжить' : 'Выбрать'}</span>
         </button>`;
       }).join('');
     } else {
