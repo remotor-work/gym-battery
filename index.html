@@ -1800,7 +1800,7 @@ html, body {
       <div class="cal-start-wrap" id="cal-start-wrap">
         <button class="cal-start-btn cal-start-main" id="cal-start-btn"></button>
         <button class="cal-start-btn cal-start-toggle" id="cal-start-toggle" type="button" aria-label="Выбрать тренировку" aria-expanded="false">
-          <span class="toggle-label">ДЕНЬ</span>
+          <span class="toggle-label">ВЫБОР</span>
           <span class="chevron">▾</span>
         </button>
         <div class="cal-start-menu" id="cal-start-menu" hidden></div>
@@ -1822,7 +1822,7 @@ html, body {
     <div class="app-header">
       <div class="header-left">
         <!-- id="w-day-label" — заполняется из JS: "Д1 · ВЕРХ" -->
-        <div class="logo" id="w-day-label">Д1 · ВЕРХ</div>
+        <div class="logo" id="w-day-label">ТРЕНИРОВКА 1 · ВЕРХ</div>
         <div class="title">ТРЕНИРОВКА</div>
       </div>
       <button class="back-btn" id="btn-go-home" aria-label="Вернуться к группам мышц">← Назад</button>
@@ -1850,7 +1850,7 @@ html, body {
   <div class="screen" id="screen-muscles">
     <div class="app-header">
       <div class="header-left">
-        <div class="logo" id="m-day-label">Д1 · ВЕРХ</div>
+        <div class="logo" id="m-day-label">ТРЕНИРОВКА 1 · ВЕРХ</div>
         <div class="title">ГРУППЫ МЫШЦ</div>
       </div>
       <div class="header-right">
@@ -2861,10 +2861,10 @@ const workoutSchedule = {
  * @type {Object.<string, string>}
  */
 const dayFullNames = {
-  "Д1":"День 1 — Верх",
-  "Д2":"День 2 — Низ",
-  "Д3":"День 3 — Верх",
-  "Д4":"День 4 — Низ"
+  "Д1":"Тренировка 1 — Верх",
+  "Д2":"Тренировка 2 — Низ",
+  "Д3":"Тренировка 3 — Верх",
+  "Д4":"Тренировка 4 — Низ"
 };
 
 /**
@@ -2884,6 +2884,29 @@ const DAYS_ORDER = ["Д1","Д2","Д3","Д4"];
 
 /* Экстра-тренировки (пресс + изоляция, по heat-score из EXTRA_POOL) */
 const EXTRA_DAYS = ["Э1","Э2","Э3"];
+
+function getWorkoutNumber(day) {
+  if (DAYS_ORDER.includes(day)) return DAYS_ORDER.indexOf(day) + 1;
+  if (EXTRA_DAYS.includes(day)) return EXTRA_DAYS.indexOf(day) + 1;
+  return null;
+}
+
+function getWorkoutShortLabel(day) {
+  const num = getWorkoutNumber(day);
+  if (num === null) return day;
+  return DAYS_ORDER.includes(day) ? `Т${num}` : `Э${num}`;
+}
+
+function getWorkoutTitle(day) {
+  const num = getWorkoutNumber(day);
+  if (num === null) return day;
+  return DAYS_ORDER.includes(day) ? `Тренировка ${num}` : `Экстра-${num}`;
+}
+
+function getWorkoutDisplayName(day) {
+  if (DAYS_ORDER.includes(day)) return dayFullNames[day] || getWorkoutTitle(day);
+  return getWorkoutTitle(day);
+}
 
 /* Пул упражнений для экстра-дней: пресс + изоляция. Не входят в основную программу.
    key → ключ в exerciseVariations; type/muscle/movement — метаданные слота */
@@ -3530,7 +3553,7 @@ const UI = {
         const done = p.slots.filter(sl => sl.done).length;
         const total = p.slots.length;
         if (done > 0) progressMap[todayStr] = {
-          pct: Math.round(done / total * 100), dayLabel: day
+          pct: Math.round(done / total * 100), dayLabel: getWorkoutShortLabel(day)
         };
       }
     });
@@ -3550,7 +3573,7 @@ const UI = {
         if (totalExpected > 0) {
           return {
             pct: Math.min(100, Math.round(totalDone / totalExpected * 100)),
-            dayLabel: entries[0].day
+            dayLabel: getWorkoutShortLabel(entries[0].day)
           };
         }
       }
@@ -3610,16 +3633,14 @@ const UI = {
     const completedExtra = App.getCompletedExtraDays();
     document.getElementById('cal-week-info').innerHTML = `
       <span class="cal-week-text">Неделя: <strong>${completed} / ${total}</strong> · Экстра: <strong>${completedExtra} / ${EXTRA_DAYS.length}</strong></span>
-      <button class="btn-reset-day" id="btn-reset-day">↻ день</button>`;
+      <button class="btn-reset-day" id="btn-reset-day">↻ тренировка</button>`;
 
     /* ── CTA: автовыбор следующей тренировки ── */
     /* Если есть незавершённая тренировка (progress с слотами), предлагаем продолжить */
     let nextDay = null;
-    let isResume = false;
     for (const day of DAYS_ORDER) {
-      if (App.persist.progress[day] && App.persist.progress[day].slots && !App.persist.doneDays[day]) {
+      if (App.persist.progress[day] && App.persist.progress[day].slots) {
         nextDay = day;
-        isResume = true;
         break;
       }
     }
@@ -3632,7 +3653,9 @@ const UI = {
     const btn = document.getElementById('cal-start-btn');
     const toggleBtn = document.getElementById('cal-start-toggle');
     const menu = document.getElementById('cal-start-menu');
-    const selectableDays = DAYS_ORDER.filter(day => !App.persist.doneDays[day]);
+    if (!nextDay) nextDay = DAYS_ORDER[0] || null;
+
+    const selectableDays = DAYS_ORDER.slice();
     const selectedDay = selectableDays.includes(App.state.homeSelectedDay)
       ? App.state.homeSelectedDay
       : nextDay;
@@ -3641,7 +3664,7 @@ const UI = {
 
     if (selectedDay) {
       const idx = DAYS_ORDER.indexOf(selectedDay) + 1;
-      const selectedResume = !!(App.persist.progress[selectedDay] && App.persist.progress[selectedDay].slots && !App.persist.doneDays[selectedDay]);
+      const selectedResume = !!(App.persist.progress[selectedDay] && App.persist.progress[selectedDay].slots);
       const label = selectedResume ? `ПРОДОЛЖИТЬ ТРЕНИРОВКУ ${idx}` : `НАЧАТЬ ТРЕНИРОВКУ ${idx}`;
       btn.textContent = label;
       btn.disabled = false;
@@ -3649,8 +3672,8 @@ const UI = {
       toggleBtn.disabled = selectableDays.length <= 1;
       menu.innerHTML = selectableDays.map(day => {
         const dayIdx = DAYS_ORDER.indexOf(day) + 1;
-        const resume = !!(App.persist.progress[day] && App.persist.progress[day].slots && !App.persist.doneDays[day]);
-        const dayName = dayFullNames[day] || day;
+        const resume = !!(App.persist.progress[day] && App.persist.progress[day].slots);
+        const dayName = getWorkoutDisplayName(day);
         return `<button class="cal-start-menu-item${day === selectedDay ? ' active' : ''}" type="button" data-action="select-home-day" data-day="${day}">
           <span class="cal-start-menu-copy">
             <span class="cal-start-menu-day">ТРЕНИРОВКА ${dayIdx}</span>
@@ -3688,12 +3711,11 @@ const UI = {
     /* ── Превью тренировки на сегодня ── */
     const preview = document.getElementById('cal-preview');
     if (selectedDay) {
-      const idx = DAYS_ORDER.indexOf(selectedDay) + 1;
       const desc = dayDescriptions[selectedDay] || '';
       const todayFmt = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
       preview.innerHTML =
         `<span class="cal-preview-date">${todayFmt}</span>` +
-        `<span class="cal-preview-label">Тренировка ${idx}: ${desc}</span>`;
+        `<span class="cal-preview-label">${getWorkoutTitle(selectedDay)}: ${desc}</span>`;
       preview.style.display = '';
     } else {
       preview.style.display = 'none';
@@ -3726,7 +3748,7 @@ const UI = {
                + (setsStr ? `<span class="day-log-sets"> · ${setsStr}</span>` : '')
                + `</div>`;
         }).join('');
-        return `<div class="day-log-entry"><div class="day-log-day">${entry.day}</div>${exList}</div>`;
+        return `<div class="day-log-entry"><div class="day-log-day">${getWorkoutDisplayName(entry.day)}</div>${exList}</div>`;
       }).join('');
     }
 
@@ -3793,7 +3815,7 @@ const UI = {
         html += `
           <div class="history-item">
             <div class="history-date">${dateStr}</div>
-            <div class="history-summary"><strong>${h.day} · ${h.name}</strong> — ${h.exercises.length} упр.${vol}</div>
+            <div class="history-summary"><strong>${getWorkoutTitle(h.day)} · ${h.name}</strong> — ${h.exercises.length} упр.${vol}</div>
           </div>`;
       });
     }
@@ -3923,7 +3945,7 @@ const UI = {
           html += `<div class="log-day log-day--active">
             <div class="log-day-header">
               <span class="log-date">${dayName}</span>
-              <span class="log-day-tag">${entry.day}</span>
+              <span class="log-day-tag">${getWorkoutTitle(entry.day)}</span>
               ${totalVol > 0 ? `<span class="log-volume">${totalVol.toLocaleString('ru')} кг</span>` : ''}
             </div>
             <div class="log-exercises">`;
@@ -4223,7 +4245,7 @@ const Workout = {
     s.currentSlotIdx = null;
     const saved = App.persist.progress[day];
     s.slots = (saved && saved.slots) ? saved.slots : this.buildSlots(day);
-    document.getElementById('m-day-label').textContent = day + ' · ' + (workoutSchedule[day] ? workoutSchedule[day].name : '');
+    document.getElementById('m-day-label').textContent = getWorkoutDisplayName(day);
     document.getElementById('muscles-hint').textContent = dayDescriptions[day] || '';
     App.updateBattery();
     this.renderMuscles();
@@ -4241,8 +4263,7 @@ const Workout = {
     s.currentSlotIdx = null;
     const saved = App.persist.progress[extraDay];
     s.slots = (saved && saved.slots) ? saved.slots : this.buildExtraSlots();
-    const num = EXTRA_DAYS.indexOf(extraDay) + 1;
-    document.getElementById('m-day-label').textContent = `${extraDay} · ЭКСТРА-${num}`;
+    document.getElementById('m-day-label').textContent = getWorkoutTitle(extraDay);
     document.getElementById('muscles-hint').textContent = 'изоляция + пресс';
     App.updateBattery();
     this.renderMuscles();
@@ -4439,7 +4460,7 @@ const Workout = {
     const vars = exerciseVariations[varKey] || [];
 
     /* Заполняем UI-элементы */
-    document.getElementById('ex-header-label').textContent = s.currentDay + ' · #' + String(slot.id).padStart(2, '0');
+    document.getElementById('ex-header-label').textContent = getWorkoutTitle(s.currentDay) + ' · #' + String(slot.id).padStart(2, '0');
     document.getElementById('det-type').textContent = slot.type.toUpperCase();
     document.getElementById('det-index').textContent = '#' + String(slot.id).padStart(2, '0');
     document.getElementById('det-movement').textContent = slot.movement;
@@ -4547,7 +4568,7 @@ const Workout = {
     const slotId = slot ? slot.id : '';
     const slotType = slot ? slot.type : '';
     const slotMuscle = slot ? slot.muscle : '';
-    document.getElementById('vd-header-label').textContent = s.currentDay + (slotId ? ' · #' + String(slotId).padStart(2, '0') : '');
+    document.getElementById('vd-header-label').textContent = getWorkoutTitle(s.currentDay) + (slotId ? ' · #' + String(slotId).padStart(2, '0') : '');
     document.getElementById('vd-type-chip').textContent = slotType.toUpperCase();
     document.getElementById('vd-id-chip').textContent = slotId ? '#' + String(slotId).padStart(2, '0') : '';
     document.getElementById('vd-title').textContent = v.name;
@@ -5025,7 +5046,7 @@ const Workout = {
     const slot = s.slots[slotIdx];
     if (!slot) return;
     document.getElementById('w-day-label').textContent =
-      s.currentDay + ' · ' + slot.muscle;
+      getWorkoutTitle(s.currentDay) + ' · ' + slot.muscle;
     document.getElementById('workout-hint').textContent = slot.movement;
     this.render();
     UI.showScreen('screen-workout');
