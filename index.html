@@ -658,6 +658,7 @@ html, body {
   left: 0;
   right: 0;
   top: calc(100% + 10px);
+  bottom: auto;
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: 18px;
@@ -668,6 +669,10 @@ html, body {
   -webkit-overflow-scrolling: touch;
   z-index: 15;
   padding: 6px;
+}
+.cal-start-wrap.menu-up .cal-start-menu {
+  top: auto;
+  bottom: calc(100% + 10px);
 }
 .cal-start-menu[hidden] { display: none; }
 .cal-start-menu-item {
@@ -3463,8 +3468,21 @@ const UI = {
     const menu = document.getElementById('cal-start-menu');
     const toggle = document.getElementById('cal-start-toggle');
     if (!wrap || !menu || !toggle) return;
-    wrap.classList.toggle('open', !!isOpen);
-    menu.hidden = !isOpen;
+    if (!isOpen) {
+      wrap.classList.remove('open', 'menu-up');
+      menu.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+      return;
+    }
+
+    wrap.classList.add('open');
+    menu.hidden = false;
+    const wrapRect = wrap.getBoundingClientRect();
+    const menuHeight = Math.min(menu.scrollHeight || 0, Math.max(window.innerHeight - 32, 0));
+    const spaceAbove = wrapRect.top - 12;
+    const spaceBelow = window.innerHeight - wrapRect.bottom - 12;
+    const shouldOpenUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+    wrap.classList.toggle('menu-up', shouldOpenUp);
     toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   },
 
