@@ -733,6 +733,13 @@ html, body {
   background: rgba(217,115,32,0.18);
   color: var(--led);
 }
+.cal-start-menu-item.is-done .cal-start-menu-day {
+  color: #9fd3a8;
+}
+.cal-start-menu-item.is-done .cal-start-menu-label {
+  background: rgba(72, 160, 98, 0.16);
+  color: #9fd3a8;
+}
 
 /* Кнопка экстра-тренировки — вторичная, под основной */
 .cal-extra-btn {
@@ -3687,7 +3694,10 @@ const UI = {
     if (selectedDay) {
       const idx = DAYS_ORDER.indexOf(selectedDay) + 1;
       const selectedResume = !!(App.persist.progress[selectedDay] && App.persist.progress[selectedDay].slots);
-      const label = selectedResume ? `ПРОДОЛЖИТЬ ТРЕНИРОВКУ ${idx}` : `НАЧАТЬ ТРЕНИРОВКУ ${idx}`;
+      const selectedDone = !!App.persist.doneDays[selectedDay];
+      const label = selectedResume
+        ? `ПРОДОЛЖИТЬ ТРЕНИРОВКУ ${idx}`
+        : (selectedDone ? `ПОВТОРИТЬ ТРЕНИРОВКУ ${idx}` : `НАЧАТЬ ТРЕНИРОВКУ ${idx}`);
       btn.textContent = label;
       btn.disabled = false;
       btn.onclick = () => Workout.start(selectedDay);
@@ -3695,13 +3705,20 @@ const UI = {
       menu.innerHTML = menuDays.map(day => {
         const dayIdx = DAYS_ORDER.indexOf(day) + 1;
         const resume = !!(App.persist.progress[day] && App.persist.progress[day].slots);
+        const done = !!App.persist.doneDays[day];
         const dayName = getWorkoutDisplayName(day);
-        return `<button class="cal-start-menu-item" type="button" data-action="select-home-day" data-day="${day}">
+        const statusText = resume
+          ? 'Продолжить'
+          : (done ? '✓ Выполнено' : 'Выбрать');
+        const descText = resume
+          ? `${dayName} · есть прогресс`
+          : (done ? `${dayName} · уже была на этой неделе` : `${dayName} · новый запуск`);
+        return `<button class="cal-start-menu-item${done ? ' is-done' : ''}" type="button" data-action="select-home-day" data-day="${day}">
           <span class="cal-start-menu-copy">
             <span class="cal-start-menu-day">ТРЕНИРОВКА ${dayIdx}</span>
-            <span class="cal-start-menu-desc">${dayName} · ${resume ? 'есть прогресс' : 'новый запуск'}</span>
+            <span class="cal-start-menu-desc">${descText}</span>
           </span>
-          <span class="cal-start-menu-label">${resume ? 'Продолжить' : 'Выбрать'}</span>
+          <span class="cal-start-menu-label">${statusText}</span>
         </button>`;
       }).join('');
     } else {
