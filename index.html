@@ -742,23 +742,34 @@ html, body {
 }
 
 /* Кнопка экстра-тренировки — вторичная, под основной */
-.cal-extra-btn {
-  width: 100%; margin-top: 8px; padding: 14px;
-  border-radius: var(--r);
+.cal-extra-wrap {
+  margin-top: 8px;
+}
+.cal-extra-main {
   background: transparent;
   border: 1px solid var(--led-dim);
-  color: var(--led-dim);
-  font-family: var(--orb); font-size: 11px; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.15s;
+  color: var(--led);
+  box-shadow: none;
 }
-.cal-extra-btn:active { background: var(--bg2); border-color: var(--led); color: var(--led); }
-.cal-extra-btn:disabled {
-  border-color: var(--border); color: var(--text-dim);
-  cursor: default;
+.cal-extra-main:active {
+  background: var(--bg2);
+  border-color: var(--led);
+  color: var(--led);
+  box-shadow: none;
 }
-.cal-extra-btn:disabled:active { background: transparent; }
+.cal-extra-main:disabled {
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+.cal-extra-main:disabled:active {
+  background: transparent;
+}
+.cal-extra-toggle {
+  border-color: var(--led-dim);
+}
+.cal-extra-wrap .cal-start-menu-day {
+  color: #8fd4ff;
+}
 
 /* Анимация появления элемента */
 @keyframes slideIn {
@@ -1820,7 +1831,14 @@ html, body {
         </button>
         <div class="cal-start-menu" id="cal-start-menu" hidden></div>
       </div>
-      <button class="cal-extra-btn" id="cal-extra-btn"></button>
+      <div class="cal-start-wrap cal-extra-wrap" id="cal-extra-wrap">
+        <button class="cal-start-btn cal-start-main cal-extra-main" id="cal-extra-btn"></button>
+        <button class="cal-start-btn cal-start-toggle cal-extra-toggle" id="cal-extra-toggle" type="button" aria-label="Выбрать экстра-тренировку" aria-expanded="false">
+          <span class="toggle-label">ЭКСТРА</span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="cal-start-menu" id="cal-extra-menu" hidden></div>
+      </div>
     </div>
   </div>
 
@@ -2897,8 +2915,32 @@ const dayDescriptions = {
 
 const DAYS_ORDER = ["Д1","Д2","Д3","Д4"];
 
-/* Экстра-тренировки (пресс + изоляция, по heat-score из EXTRA_POOL) */
-const EXTRA_DAYS = ["Э1","Э2","Э3"];
+const EXTRA_WORKOUTS = {
+  "Э1": {
+    short: "ИЗОЛЯЦИЯ + ПРЕСС",
+    name: "Экстра — Изоляция + пресс",
+    desc: "Добивка слабых мест, пресс и изоляционные движения.",
+    mode: "isolation"
+  },
+  "Э2": {
+    short: "FULL BODY",
+    name: "Экстра — Full Body",
+    desc: "Всё тело за одну тренировку. Удобно для новичков и редких визитов.",
+    mode: "fullbody"
+  }
+};
+
+/* Экстра-тренировки: отдельные сценарии вне основного сплита */
+const EXTRA_DAYS = Object.keys(EXTRA_WORKOUTS);
+
+const FULL_BODY_TEMPLATE = [
+  { id: 1, type: "Жим",      muscle: "Грудь",                 movement: "Базовый жим на грудь",            varKey: "Д1-1" },
+  { id: 2, type: "Тяга",     muscle: "Спина",                 movement: "Основная тяга на спину",          varKey: "Д3-1" },
+  { id: 3, type: "Присед",   muscle: "Квадрицепс",            movement: "Базовое движение на ноги",        varKey: "Д2-1" },
+  { id: 4, type: "Тяга",     muscle: "Задняя цепь",           movement: "Тяга на ягодицы и бицепс бедра",  varKey: "Д2-2" },
+  { id: 5, type: "Жим",      muscle: "Плечи",                 movement: "Вертикальный жим над головой",    varKey: "Д3-2" },
+  { id: 6, type: "ПРЕСС",    muscle: "Кор",                   movement: "Финишер на пресс",                varKey: "Э-abs-front" }
+];
 
 function getWorkoutNumber(day) {
   if (DAYS_ORDER.includes(day)) return DAYS_ORDER.indexOf(day) + 1;
@@ -2915,11 +2957,13 @@ function getWorkoutShortLabel(day) {
 function getWorkoutTitle(day) {
   const num = getWorkoutNumber(day);
   if (num === null) return day;
-  return DAYS_ORDER.includes(day) ? `Тренировка ${num}` : `Экстра-${num}`;
+  if (DAYS_ORDER.includes(day)) return `Тренировка ${num}`;
+  return EXTRA_WORKOUTS[day] ? EXTRA_WORKOUTS[day].name : `Экстра-${num}`;
 }
 
 function getWorkoutDisplayName(day) {
   if (DAYS_ORDER.includes(day)) return dayFullNames[day] || getWorkoutTitle(day);
+  if (EXTRA_WORKOUTS[day]) return EXTRA_WORKOUTS[day].name;
   return getWorkoutTitle(day);
 }
 
@@ -3029,6 +3073,7 @@ const App = {
     currentVarKey: null,    // "Д1-2" и т.п.
     currentVarIdx: null,    // индекс варианта внутри exerciseVariations[varKey]
     homeSelectedDay: null,  // выбранный день на главной кнопке запуска
+    homeSelectedExtra: null,// выбранная экстра-тренировка на главной
     setsCompleted: 0,
     setData: [],
   },
@@ -3493,6 +3538,29 @@ const UI = {
     toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   },
 
+  setExtraMenuOpen(isOpen) {
+    const wrap = document.getElementById('cal-extra-wrap');
+    const menu = document.getElementById('cal-extra-menu');
+    const toggle = document.getElementById('cal-extra-toggle');
+    if (!wrap || !menu || !toggle) return;
+    if (!isOpen) {
+      wrap.classList.remove('open', 'menu-up');
+      menu.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+      return;
+    }
+
+    wrap.classList.add('open');
+    menu.hidden = false;
+    const wrapRect = wrap.getBoundingClientRect();
+    const menuHeight = Math.min(menu.scrollHeight || 0, Math.max(window.innerHeight - 32, 0));
+    const spaceAbove = wrapRect.top - 12;
+    const spaceBelow = window.innerHeight - wrapRect.bottom - 12;
+    const shouldOpenUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+    wrap.classList.toggle('menu-up', shouldOpenUp);
+    toggle.setAttribute('aria-expanded', 'true');
+  },
+
   /**
    * Тактильная обратная связь (вибрация).
    * Использует Vibration API (поддерживается на Android).
@@ -3731,21 +3799,65 @@ const UI = {
     this.setHomeDayMenuOpen(false);
 
     /* ── CTA: экстра-тренировка ── */
-    const nextExtra = EXTRA_DAYS.find(d =>
-      App.persist.progress[d] && App.persist.progress[d].slots && !App.persist.doneDays[d]
-    ) || EXTRA_DAYS.find(d => !App.persist.doneDays[d]);
+    let nextExtra = null;
+    for (const day of EXTRA_DAYS) {
+      if (App.persist.progress[day] && App.persist.progress[day].slots) {
+        nextExtra = day;
+        break;
+      }
+    }
+    if (!nextExtra) {
+      for (const day of EXTRA_DAYS) {
+        if (!App.persist.doneDays[day]) { nextExtra = day; break; }
+      }
+    }
+
     const extraBtn = document.getElementById('cal-extra-btn');
-    if (nextExtra) {
-      const extraNum = EXTRA_DAYS.indexOf(nextExtra) + 1;
-      const extraResume = App.persist.progress[nextExtra] && App.persist.progress[nextExtra].slots;
-      extraBtn.textContent = extraResume ? `ПРОДОЛЖИТЬ ЭКСТРА-${extraNum}` : `ЭКСТРА-ТРЕНИРОВКА ${extraNum}`;
+    const extraToggleBtn = document.getElementById('cal-extra-toggle');
+    const extraMenu = document.getElementById('cal-extra-menu');
+    if (!nextExtra) nextExtra = EXTRA_DAYS[0] || null;
+
+    const selectableExtras = EXTRA_DAYS.slice();
+    const selectedExtra = selectableExtras.includes(App.state.homeSelectedExtra)
+      ? App.state.homeSelectedExtra
+      : nextExtra;
+    const extraMenuDays = selectableExtras.filter(day => day !== selectedExtra);
+    App.state.homeSelectedExtra = selectedExtra || null;
+
+    if (selectedExtra) {
+      const meta = EXTRA_WORKOUTS[selectedExtra] || {};
+      const extraResume = !!(App.persist.progress[selectedExtra] && App.persist.progress[selectedExtra].slots);
+      const extraDone = !!App.persist.doneDays[selectedExtra];
+      extraBtn.textContent = extraResume
+        ? `ПРОДОЛЖИТЬ ${meta.short || getWorkoutTitle(selectedExtra)}`
+        : (extraDone ? `ПОВТОРИТЬ ${meta.short || getWorkoutTitle(selectedExtra)}` : `${meta.short || getWorkoutTitle(selectedExtra)}`);
       extraBtn.disabled = false;
-      extraBtn.onclick = () => Workout.startExtra(nextExtra);
+      extraBtn.onclick = () => Workout.startExtra(selectedExtra);
+      extraToggleBtn.disabled = extraMenuDays.length === 0;
+      extraMenu.innerHTML = extraMenuDays.map(day => {
+        const itemMeta = EXTRA_WORKOUTS[day] || {};
+        const resume = !!(App.persist.progress[day] && App.persist.progress[day].slots);
+        const done = !!App.persist.doneDays[day];
+        const statusText = resume ? 'Продолжить' : (done ? '✓ Выполнено' : 'Выбрать');
+        const descText = resume
+          ? `${itemMeta.desc || getWorkoutDisplayName(day)} · есть прогресс`
+          : (done ? `${itemMeta.desc || getWorkoutDisplayName(day)} · уже была на этой неделе` : `${itemMeta.desc || getWorkoutDisplayName(day)} · доступна сейчас`);
+        return `<button class="cal-start-menu-item${done ? ' is-done' : ''}" type="button" data-action="select-home-extra" data-day="${day}">
+          <span class="cal-start-menu-copy">
+            <span class="cal-start-menu-day">${itemMeta.short || getWorkoutTitle(day)}</span>
+            <span class="cal-start-menu-desc">${descText}</span>
+          </span>
+          <span class="cal-start-menu-label">${statusText}</span>
+        </button>`;
+      }).join('');
     } else {
-      extraBtn.textContent = 'ВСЕ ЭКСТРА ВЫПОЛНЕНЫ ⚡';
+      extraBtn.textContent = 'ЭКСТРА НЕДОСТУПНА';
       extraBtn.disabled = true;
       extraBtn.onclick = null;
+      extraToggleBtn.disabled = true;
+      extraMenu.innerHTML = '';
     }
+    this.setExtraMenuOpen(false);
 
     /* ── Превью тренировки на сегодня ── */
     const preview = document.getElementById('cal-preview');
@@ -4236,7 +4348,7 @@ const Workout = {
    * Выбирает из EXTRA_POOL упражнения с наименьшим heat (+ jitter для ротации).
    * Пресс всегда "холодный", поэтому попадает регулярно.
    */
-  buildExtraSlots() {
+  buildIsolationExtraSlots() {
     /* Пресс всегда включается (3 слота), остальные 3 — лучшая изоляция по score */
     const absPool = EXTRA_POOL.filter(ex => ex.type === 'ПРЕСС');
     const isoPool = EXTRA_POOL.filter(ex => ex.type !== 'ПРЕСС');
@@ -4263,6 +4375,26 @@ const Workout = {
         varKey: ex.key,
         varQueue: available.sort((a, b) =>
           varScore(b, ex.key, vars[b].img) - varScore(a, ex.key, vars[a].img)
+        ),
+        busy: [],
+        done: false,
+        doneVarIdx: null,
+      };
+    });
+  },
+
+  buildFullBodySlots() {
+    return FULL_BODY_TEMPLATE.map(ex => {
+      const vars = exerciseVariations[ex.varKey] || [];
+      const available = vars.map((_, i) => i).filter(i => !App.isBanned(ex.varKey, i));
+      return {
+        id: ex.id,
+        type: ex.type,
+        muscle: ex.muscle,
+        movement: ex.movement,
+        varKey: ex.varKey,
+        varQueue: available.sort((a, b) =>
+          varScore(b, ex.varKey, vars[b].img) - varScore(a, ex.varKey, vars[a].img)
         ),
         busy: [],
         done: false,
@@ -4301,9 +4433,14 @@ const Workout = {
     s.currentDay = extraDay;
     s.currentSlotIdx = null;
     const saved = App.persist.progress[extraDay];
-    s.slots = (saved && saved.slots) ? saved.slots : this.buildExtraSlots();
+    const mode = EXTRA_WORKOUTS[extraDay] ? EXTRA_WORKOUTS[extraDay].mode : 'isolation';
+    s.slots = (saved && saved.slots)
+      ? saved.slots
+      : (mode === 'fullbody' ? this.buildFullBodySlots() : this.buildIsolationExtraSlots());
     document.getElementById('m-day-label').textContent = getWorkoutTitle(extraDay);
-    document.getElementById('muscles-hint').textContent = 'изоляция + пресс';
+    document.getElementById('muscles-hint').textContent = EXTRA_WORKOUTS[extraDay]
+      ? EXTRA_WORKOUTS[extraDay].desc
+      : 'изоляция + пресс';
     App.updateBattery();
     this.renderMuscles();
     UI.showScreen('screen-muscles');
@@ -4966,7 +5103,7 @@ const Workout = {
     const totalVolume = completedExercises.reduce((sum, ex) =>
       sum + ex.sets.reduce((s2, set) => s2 + (set.weight || 0) * (set.reps || 0), 0), 0);
     const workoutName = isExtra
-      ? ('ЭКСТРА-' + (EXTRA_DAYS.indexOf(s.currentDay) + 1))
+      ? ((EXTRA_WORKOUTS[s.currentDay] && EXTRA_WORKOUTS[s.currentDay].short) || getWorkoutTitle(s.currentDay))
       : (workoutSchedule[s.currentDay] ? workoutSchedule[s.currentDay].name : s.currentDay);
 
     App.persist.history.push({
@@ -5174,6 +5311,10 @@ document.getElementById('app').addEventListener('click', (e) => {
   if (startWrap && startWrap.classList.contains('open') && !e.target.closest('#cal-start-wrap')) {
     UI.setHomeDayMenuOpen(false);
   }
+  const extraWrap = document.getElementById('cal-extra-wrap');
+  if (extraWrap && extraWrap.classList.contains('open') && !e.target.closest('#cal-extra-wrap')) {
+    UI.setExtraMenuOpen(false);
+  }
 
   /* Ищем ближайший элемент с data-action (всплытие) */
   const target = e.target.closest('[data-action]');
@@ -5209,6 +5350,11 @@ document.getElementById('app').addEventListener('click', (e) => {
     /* ── Главный экран: выбор дня из выпадающего меню ── */
     case 'select-home-day':
       App.state.homeSelectedDay = target.dataset.day || null;
+      UI.renderHome();
+      break;
+
+    case 'select-home-extra':
+      App.state.homeSelectedExtra = target.dataset.day || null;
       UI.renderHome();
       break;
 
@@ -5395,7 +5541,16 @@ document.getElementById('cal-start-toggle').addEventListener('click', () => {
   const toggle = document.getElementById('cal-start-toggle');
   if (toggle.disabled) return;
   const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+  UI.setExtraMenuOpen(false);
   UI.setHomeDayMenuOpen(!isOpen);
+});
+
+document.getElementById('cal-extra-toggle').addEventListener('click', () => {
+  const toggle = document.getElementById('cal-extra-toggle');
+  if (toggle.disabled) return;
+  const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+  UI.setHomeDayMenuOpen(false);
+  UI.setExtraMenuOpen(!isOpen);
 });
 
 /* Навигация: Настройки */
